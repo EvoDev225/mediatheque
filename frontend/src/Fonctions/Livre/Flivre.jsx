@@ -13,3 +13,15 @@ axios.defaults.withCredentials = true
             toast.error(error.response.data.message)
         }
     }
+
+export const InsererLivre = async ( books)=>{
+    try {
+        const res = await axios.post(`${AXIOS_URI}/livre/creation`,books)
+        if(res.data.status==="valide"){
+            toast.success(res.data.message)
+        }
+    } catch (error) {
+        toast.error(error.response.data.message)
+        console.log(error)
+    }
+}

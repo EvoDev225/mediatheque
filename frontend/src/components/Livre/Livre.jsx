@@ -11,6 +11,7 @@ import { ToutLivre } from "../../Fonctions/Livre/Flivre";
 import { FaAngleUp } from "react-icons/fa";
 import { FaAngleDown } from "react-icons/fa6";
 import toast from "react-hot-toast";
+import Navbar from "../../Hero/Navbar";
 
 const Livre = () => {
     const [allBooks, setAllBooks] = useState([]);
@@ -117,8 +118,8 @@ const Livre = () => {
             <div className="relative overflow-hidden w-full bg-[url(./assets/img/bibliothèque.jpg)] bg-cover bg-center h-[80vh] hero">
                 <div className="absolute inset-0 bg-black/50"></div>
                 <div className="relative z-10">
-                    <div className="h-20"><NavbarLivre/></div>
-                    <div className="pt-60 text-white hero_content w-full lg:w-7xl mx-auto h-full flex items-center   ">
+                    <div className="h-20 z-50"><Navbar/></div>
+                    <div className=" pt-40 lg:pt-60 text-white hero_content w-full lg:w-7xl mx-auto h-full flex items-center   ">
                         <div className="px-4 lg:px-0 mb-20 lg:mb-40 flex flex-col justify-center  w-full lg:w-4xl gap-6 ">
                             <h1 className="text-4xl lg:text-6xl font-bold uppercase tracking-tight">
                                 Votre Portail vers la Lecture et <span className="text-orange-500">la Culture</span>
@@ -393,7 +394,7 @@ const Livre = () => {
                     </div>
                 </div>
 
-                <div className="fixed bottom-100 flex flex-col items-center gap-4 right-10 p-10 z-50">
+                <div className="fixed bottom-100 flex flex-col items-center gap-4 right-0 lg:right-10 p-10 z-50">
                     <a href="#" className="bg-orange-500 text-white p-4 rounded-full font-bold text-xl"><FaAngleUp /></a>
                     <a href="#contact" className="bg-orange-500 text-white p-4 rounded-full font-bold text-xl"><FaAngleDown /></a>
                 </div>
