@@ -41,17 +41,18 @@ const Contact = () => {
             <input
               type=" text"
               placeholder="Entrez votre nom"
-              className=" bg-gray-100 border-b outline-none text-black p-4 w-full "
+              className="   rounded-lg border border-gray-500 outline-orange-500 text-black p-4 w-full "
             />
             <input
               type=" email"
               placeholder="Entrez votre email"
-              className=" bg-gray-100 border-b outline-none text-black p-4 w-full "
+              className="   rounded-lg border border-gray-500 outline-orange-500 text-black p-4 w-full "
             />
           </div>
           <textarea
             name=""
-            className=" resize-none w-full h-20 outline-none p-2 xl:text-[18px] border-b bg-gray-100"
+            className="   rounded-lg border border-gray-500 outline-orange-500 text-black p-4 w-full  resize-none"
+            placeholder="Entrez votre message"
             id=""
           ></textarea>
           <button className="duration-300 rounded transition-all hover:-translate-y-1 p-5 bg-orange-500 text-white font-bold text-xl cursor-pointer">

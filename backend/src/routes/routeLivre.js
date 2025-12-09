@@ -18,7 +18,7 @@ router.post("/", creerLivre);
 
 // Route pour obtenir tous les livres
 // GET /api/livres
-router.get("/", obtenirTousLesLivres);
+router.get("/obtenir", obtenirTousLesLivres);
 
 // Route pour rechercher des livres par titre ou auteur
 // GET /api/livres/recherche?recherche=terme

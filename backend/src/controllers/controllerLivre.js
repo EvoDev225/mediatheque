@@ -5,6 +5,7 @@ const creerLivre = async (req, res) => {
     try {
         const { 
             code, 
+            img,
             numero, 
             titre, 
             auteur, 
@@ -37,6 +38,7 @@ const creerLivre = async (req, res) => {
         const nouveauLivre = new Livre({
             code,
             numero,
+            img,
             titre,
             auteur,
             lieuEdition,

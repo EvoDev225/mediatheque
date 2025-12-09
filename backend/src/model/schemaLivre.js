@@ -1,6 +1,7 @@
 const mongoose = require("mongoose")
 const schemaLivre = new mongoose.Schema({
     code:{type:Number,required:true},
+    img:{type:String},
     numero:{type:Number,required:true},
     titre:{type:String,required:true},
     auteur:{type:String,required:true},
