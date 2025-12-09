@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Domine:wght@400..700&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&display=swap');/* Force a stable vertical scrollbar to avoid page content shifting
+   when toggling mobile menus that change document height. */
+html {
+  overflow-y: scroll;
+  /* For modern browsers, keep scrollbar gutter stable when available */
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+*{
+  font-optical-sizing: auto;
+}
+
+
+.hero{
+  position: relative;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+.hero::after{
+  position: absolute;
+  content: "";
+  inset: 0;
+  background-color: rgba(0,0,0,0.7);
+  z-index: 1;
+
+}
+.hero_content{
+  position: relative;
+  z-index: 2;
+}
+
+.box_shadow{
+  box-shadow:  0 0 6px 0px;
+}
