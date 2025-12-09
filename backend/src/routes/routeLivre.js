@@ -14,7 +14,7 @@ const {
 
 // Route pour créer un nouveau livre
 // POST /api/livres
-router.post("/", creerLivre);
+router.post("/creation", creerLivre);
 
 // Route pour obtenir tous les livres
 // GET /api/livres
