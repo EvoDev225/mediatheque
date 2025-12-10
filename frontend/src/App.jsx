@@ -16,6 +16,7 @@ import Multimedia from "./components/Dashboard/components/Multimedia/Multimedia"
 import Convivialite from "./components/Dashboard/components/Convivialite/Convivialite"
 import Livre from "./components/Livre/Livre"
 import Bibliotheque from "./components/Dashboard/Bibliotheque"
+import Books from "./components/Dashboard/Books"
 function App() {
 axios.defaults.baseURL = 'http://localhost:3000'
 axios.defaults.withCredentials = true
@@ -39,6 +40,7 @@ axios.defaults.withCredentials = true
             <Route path="/multimedia" element={<Multimedia/>} ></Route>
             <Route path="/convivialite" element={<Convivialite/>} ></Route>
             <Route path="/bibliotheque" element={<Bibliotheque/>} ></Route>
+            <Route path="/book" element={<Books/>} ></Route>
         </Routes>
       </BrowserRouter>
     </>

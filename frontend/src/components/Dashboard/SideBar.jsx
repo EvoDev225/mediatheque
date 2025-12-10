@@ -69,7 +69,7 @@ const SideBar = () => {
                         onClick={() => setActive("books")}
                     >
                         <FaBook className='text-2xl text-amber-700' />
-                        <span>Livres</span>
+                        <a href="/book"><span>Livres</span></a>
                     </li>
 
                     <li
@@ -147,7 +147,7 @@ const SideBar = () => {
                     <li onClick={() => { setActive("books"); toggleSidebar(); }}
                         className={`${menuItem} ${active === "books" && activeItem}`}>
                         <FaBook className='text-2xl text-amber-700' />
-                        <span>Livres</span>
+                        <a href="/book"><span>Livres</span></a>
                     </li>
 
                     <li onClick={() => { setActive("places"); toggleSidebar(); }}

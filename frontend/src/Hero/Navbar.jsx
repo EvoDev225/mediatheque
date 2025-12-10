@@ -49,7 +49,7 @@ const Navbar = () => {
             <Link to="/propos"><li className=" mr-4 font-medium duration-300 transition-all  cursor-pointer text-xl">A propos</li></Link>
               <Link to="/livre"><li className=" mr-4 font-medium duration-300 transition-all text-xl hover:text-orange-500 cursor-pointer">Livres</li></Link>
 
-            <li className=" mr-4 font-medium duration-300 transition-all  cursor-pointer text-xl">Contact</li>
+            <a href="#contact"><li className=" mr-4 font-medium duration-300 transition-all  cursor-pointer text-xl">Contact</li></a>
             <Link to="/connexion" className="w-full "> <button className=" text-xl w-full border  rounded font-medium  text-white  cursor-pointer py-2 bg-orange-500 duration-200">Connexion</button></Link>
             
 
