@@ -48,3 +48,38 @@ export const SupprimerLivre = async (id)=>{
     }
 }
 
+export const AfficherDemande=async ()=>{
+    try {
+        const res = await axios.get(`${AXIOS_URI}/demandes`)
+        if(res.data.status==="valide"){
+            return res.data.donnee
+        }
+    } catch (error) {
+        toast.error(error.response.data.message)
+        console.log(error)
+    }
+}
+
+export const CreerDemande=async (demandes)=>{
+    try {
+        const res = await axios.post(`${AXIOS_URI}/demandes`,demandes)
+        if(res.data.status==="valide"){
+            return res.data.message
+        }
+    } catch (error) {
+        toast.error(error.response.data.message)
+        console.log(error)
+    }
+}
+export const SupprimerDemande=async (id)=>{
+    try {
+        const res = await axios.delete(`${AXIOS_URI}/demandes/${id}`)
+        if(res.data.status==="valide"){
+            return res.data.message
+        }
+    } catch (error) {
+        toast.error(error.response.data.message)
+        console.log(error)
+    }
+}
+

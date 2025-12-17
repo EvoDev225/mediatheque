@@ -1,4 +1,4 @@
-const {mailjs, mailVerifier, Reinitialisation, MotdepasseReinitialiser} = require('./mail');
+const {mailjs, mailVerifier, Reinitialisation, MotdepasseReinitialiser, TemplateDemandeLivre} = require('./mail');
 require('dotenv').config()
 const nodemailer = require("nodemailer")
 const mailVerification = async (email,verificationJeton)=>{
@@ -104,5 +104,30 @@ const motdepasseChanger = async (email)=>{
         throw error;
     }
 }
+const EnvoyerDemande = async (email,details)=>{
+    try {
+        const transporter = nodemailer.createTransport({
+            host: "smtp.gmail.com", // ← CORRIGÉ ICI
+            port: 587,
+            secure: false,
+            auth: {
+                user: process.env.EMAIL,
+                pass: process.env.PASSWORD, // Utilise un "Mot de passe d'application" Google
+            },
+        });
 
-module.exports = {mailVerification,emailValide,oublierMotdepasse,motdepasseChanger}
+        const info = await transporter.sendMail({
+            from: process.env.EMAIL,
+            to: process.env.EMAIL, // Normalement ce serait l'email du destinataire
+            subject: "Demande de livre",
+            text: `Message reçu de: ${email} `,
+            html: TemplateDemandeLivre(email), // ← CORRIGÉ ICI
+        });
+        return info;
+    } catch (error) {
+        console.error("Error sending email:", error);
+        throw error;
+    }
+}
+
+module.exports = {mailVerification,emailValide,oublierMotdepasse,motdepasseChanger,EnvoyerDemande}

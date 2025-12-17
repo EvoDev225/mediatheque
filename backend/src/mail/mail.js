@@ -255,8 +255,50 @@ const MotdepasseReinitialiser = (email) => {
         </div>
     `;
 };
+const TemplateDemandeLivre = (email) => {
+    return `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <div style="max-width: 600px; margin: auto; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 30px;">
+                
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div style="font-size: 40px; color: #4a6fa5; margin-bottom: 10px;">📚</div>
+                    <h1 style="color: #333; margin: 0;">Demande de livre confirmée</h1>
+                </div>
+                
+                <p style="font-size: 16px; color: #555; line-height: 1.6;">
+                    Nous avons bien reçu votre demande de livre envoyée depuis l'adresse 
+                    <strong style="color: #4a6fa5;">${email}</strong>.
+                </p>
+                
+                <div style="background: #f8f9fa; border-radius: 6px; padding: 20px; margin: 25px 0; border-left: 4px solid #4a6fa5;">
+                    <p style="margin: 0; color: #4a6fa5; font-weight: bold; font-size: 18px;">
+                        ✔️ Demande prise en compte
+                    </p>
+                    <p style="margin: 10px 0 0; color: #666;">
+                        Notre équipe examinera votre demande et vous répondra dans les plus brefs délais.
+                    </p>
+                </div>
+                
+                <p style="font-size: 15px; color: #666;">
+                    Merci pour votre confiance et votre intérêt pour notre bibliothèque.
+                </p>
+                
+                <p style="font-size: 14px; color: #888; margin-top: 40px;">
+                    Bien cordialement,<br>
+                    <strong>Service des demandes - Bibliothèque</strong>
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <p style="font-size: 12px; color: #999; text-align: center;">
+                    Ceci est un message automatique. Pour toute question, contactez-nous à contact@bibliotheque.fr
+                </p>
+            </div>
+        </div>
+    `;
+};
 
 
 
 
-module.exports = {mailjs,mailVerifier,Reinitialisation,MotdepasseReinitialiser}
+module.exports = {mailjs,mailVerifier,Reinitialisation,MotdepasseReinitialiser,TemplateDemandeLivre}

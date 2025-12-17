@@ -1,3 +1,4 @@
+const { EnvoyerDemande } = require("../mail/mailVerification")
 const Demande = require("../model/schemaDemande")
 
 
@@ -39,14 +40,6 @@ const CreerDemande = async (req, res) => {
             })
         }
         
-        // Validation de l'email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({
-                status: "invalide",
-                message: "Format d'email invalide !"
-            })
-        }
         
         // Création de la demande
         const nouvelleDemande = new Demande({
@@ -57,10 +50,10 @@ const CreerDemande = async (req, res) => {
         })
         
         const demandeSauvegardee = await nouvelleDemande.save()
-        
+        EnvoyerDemande(email)
         return res.status(201).json({
             status: "valide",
-            message: "Demande créée avec succès !",
+            message: "Demande envoyéé avec succès !",
             donnee: demandeSauvegardee
         })
     } catch (error) {

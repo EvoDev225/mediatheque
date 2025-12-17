@@ -63,7 +63,7 @@ import {
 } from "react-icons/hi"
 import NavBarDash from './NavBarDash'
 import { useEffect, useState } from 'react'
-import { InsererLivre, ModifierLivre, SupprimerLivre, ToutLivre } from '../../Fonctions/Livre/Flivre'
+import { AfficherDemande, InsererLivre, ModifierLivre, SupprimerLivre, ToutLivre } from '../../Fonctions/Livre/Flivre'
 import toast from 'react-hot-toast'
 
 const Bibliotheque = () => {
@@ -85,6 +85,7 @@ const Bibliotheque = () => {
     const [isEditMode, setIsEditMode] = useState(false)
     const [deleted,setDeleted]=useState(false)
     const [bookToDelete, setBookToDelete] = useState(null)
+    const [allDemand,setAllDemande]=useState([])
     // État initial du livre
     const [book, setBook] = useState({
         code: "",
@@ -184,12 +185,24 @@ const Bibliotheque = () => {
 
     // Détecter la taille de l'écran
     useEffect(() => {
+        const handleDemand = async ()=>{
+            try {
+                const res = await AfficherDemande()
+                if(res){
+                    setAllDemande(res)
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
         };
         
         window.addEventListener('resize', handleResize);
+        handleDemand()
         return () => window.removeEventListener('resize', handleResize);
+
     }, []);
 
     // Gestion du changement d'image par fichier
@@ -468,11 +481,6 @@ const Bibliotheque = () => {
     }
 
     // Démandes simulées
-    const demands = [
-        { id: 1, nom: "Jean Dupont", email: "jean@exemple.com", titre: "Le Petit Prince", message: "Très intéressé par ce livre", date: "2024-01-15" },
-        { id: 2, nom: "Marie Curie", email: "marie@exemple.com", titre: "La Physique Quantique", message: "Pour mes recherches universitaires", date: "2024-01-14" },
-        { id: 3, nom: "Pierre Martin", email: "pierre@exemple.com", titre: "L'Art de la Guerre", message: "Recommandé par un ami", date: "2024-01-13" },
-    ]
 
     const statusColors = {
         'Disponible': 'bg-green-100 text-green-800 border border-green-200',
@@ -1211,7 +1219,7 @@ const Bibliotheque = () => {
                                     <div>
                                         <h2 className="text-lg sm:text-xl font-bold text-gray-800">Demandes des lecteurs</h2>
                                         <p className="text-gray-600 text-xs sm:text-sm mt-1">
-                                            {demands.length} demande{demands.length !== 1 ? 's' : ''} en attente
+                                            {allDemand.length} demande{allDemand.length !== 1 ? 's' : ''} en attente
                                         </p>
                                     </div>
                                 </div>
@@ -1229,10 +1237,11 @@ const Bibliotheque = () => {
                                         <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Nom</th>
                                         <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Email</th>
                                         <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Livre demandé</th>
+                                        <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {demands.map((demand) => (
+                                    {allDemand.map((demand) => (
                                         <tr key={demand.id} className="hover:bg-gray-50 transition-colors">
                                             <td className="py-3 px-3 sm:px-4 lg:px-6">
                                                 <div className="flex items-center gap-2">
@@ -1254,6 +1263,12 @@ const Bibliotheque = () => {
                                                 <div className="text-xs sm:text-sm text-gray-500 mt-1 max-w-xs truncate">
                                                     {demand.message}
                                                 </div>
+                                                
+                                            </td>
+                                            <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                <div className="text-xs sm:text-sm text-gray-500 text-center mt-1 max-w-xs truncate">
+                                                    <FaTrash className='text-xl text-red-500 duration-100 hover:text-red-600 cursor-pointer'/>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -1261,7 +1276,7 @@ const Bibliotheque = () => {
                             </table>
                         </div>
 
-                        {demands.length === 0 && (
+                        {allDemand.length === 0 && (
                             <div className="p-6 sm:p-8 text-center">
                                 <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-100 mb-4">
                                     <FaRegEnvelope className="text-xl sm:text-2xl text-gray-400" />

@@ -1,13 +1,13 @@
 import NavbarLivre from "./NavbarLivre";
 import { MdOutlineDashboardCustomize, MdSearch, MdFilterList } from "react-icons/md";
 import { LuSwords } from "react-icons/lu";
-import { FaBook, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
+import { FaBook, FaBullseye, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import Contact from "../../Contact";
 import Footer from "../../Footer";
 import Book from "./Book";
 import { useEffect, useState, useMemo } from "react";
-import { ToutLivre } from "../../Fonctions/Livre/Flivre";
+import { AfficherDemande, CreerDemande, ToutLivre } from "../../Fonctions/Livre/Flivre";
 import { FaAngleUp } from "react-icons/fa";
 import { FaAngleDown } from "react-icons/fa6";
 import toast from "react-hot-toast";
@@ -20,6 +20,31 @@ const Livre = () => {
     const [sortBy, setSortBy] = useState("titre"); // 'titre', 'auteur', 'date'
     const [showFilters, setShowFilters] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("Tous");
+    const [loading,setLoading]=useState(false)
+    const[demande,setDemande]=useState({
+        nom:"",
+        email:"",
+        titre:"",
+        message:"",
+    })
+    const handleSubmit = async()=>{
+        setLoading(true)
+        try {
+            const res = await CreerDemande(demande)
+            toast.success(res)
+            setLoading(false)
+            setDemande({
+                nom:"",
+                email:"",
+                titre:"",
+                message:""
+            })
+        } catch (error) {
+            console.log(error)
+            toast.error(error)
+        }
+    }
+    
 
     useEffect(() => {
         const fetchBooks = async () => {
@@ -208,7 +233,6 @@ const Livre = () => {
                                         ))}
                                     </div>
                                 </div>
-
                                 {/* Tri par */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -231,7 +255,6 @@ const Livre = () => {
                                         ))}
                                     </div>
                                 </div>
-
                                 {/* Ordre de tri */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -338,7 +361,7 @@ const Livre = () => {
                     </div>
                     
                     <div className="max-w-2xl mx-auto">
-                        <form className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 lg:p-8">
+                        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 lg:p-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-gray-700">
@@ -346,6 +369,7 @@ const Livre = () => {
                                     </label>
                                     <input 
                                         type="text" 
+                                        onChange={e=>setDemande({...demande,nom:e.target.value})}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-all"
                                         required
                                     />
@@ -356,6 +380,7 @@ const Livre = () => {
                                     </label>
                                     <input 
                                         type="email" 
+                                        onChange={e=>setDemande({...demande,email:e.target.value})}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-all"
                                         required
                                     />
@@ -368,6 +393,7 @@ const Livre = () => {
                                 </label>
                                 <input 
                                     type="text" 
+                                    onChange={e=>setDemande({...demande,titre:e.target.value})}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-all"
                                     required
                                 />
@@ -379,6 +405,7 @@ const Livre = () => {
                                 </label>
                                 <textarea 
                                     rows="4"
+                                    onChange={e=>setDemande({...demande,message:e.target.value})}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-all resize-none"
                                     required
                                 ></textarea>
@@ -386,9 +413,17 @@ const Livre = () => {
                             
                             <button
                                 type="submit"
-                                className="w-full bg-linear-to-r from-orange-500 to-orange-600 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg"
+                                className="w-full bg-linear-to-r flex justify-center from-orange-500 to-orange-600 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg"
                             >
-                                Envoyer la demande
+                                
+                                {
+                                    loading ? (
+                                        <div className="flex items-center gap-4 justify-center">
+                                        <div className=" border-b-2 rounded-full border-white p-4 animate-spin"></div>
+                                        <p className="text-white text-lg ">Envoi de la demande en cours</p>
+                                        </div>
+                                    ):("Envoyer la demande")
+                                }
                             </button>
                         </form>
                     </div>
