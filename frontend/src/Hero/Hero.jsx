@@ -15,7 +15,7 @@ const Hero = () => {
               duration:0.5
             }
           }
-          className=" w-full text-white overflow-hidden  md:mt-5 md:w-[850px]  mb-10     ">
+          className=" w-full text-white overflow-hidden  md:mt-5 md:w-[850px]  mb-10 px-4    ">
             <h1 className=" text-[30px] md:text-4xl lg:text-6xl font-bold uppercase ">
               Bienvenue dans <span className=" text-orange-500"> la médiathèque  municipale</span> - Un espace de savoir et
               de service

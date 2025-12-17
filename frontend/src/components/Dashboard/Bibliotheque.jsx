@@ -26,7 +26,8 @@ import {
   FaRegStar,
   FaRegTimesCircle,
   FaRegCheckCircle,
-  FaSpinner
+  FaSpinner,
+  FaMonument
 } from 'react-icons/fa'
 import { 
   FaGear, 
@@ -62,7 +63,7 @@ import {
 } from "react-icons/hi"
 import NavBarDash from './NavBarDash'
 import { useEffect, useState } from 'react'
-import { InsererLivre, ToutLivre } from '../../Fonctions/Livre/Flivre'
+import { InsererLivre, ModifierLivre, SupprimerLivre, ToutLivre } from '../../Fonctions/Livre/Flivre'
 import toast from 'react-hot-toast'
 
 const Bibliotheque = () => {
@@ -79,17 +80,11 @@ const Bibliotheque = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    
-    // Détecter la taille de l'écran
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-    
+    const [modal, setModal] = useState(false)
+    const [editingBook, setEditingBook] = useState(null)
+    const [isEditMode, setIsEditMode] = useState(false)
+    const [deleted,setDeleted]=useState(false)
+    const [bookToDelete, setBookToDelete] = useState(null)
     // État initial du livre
     const [book, setBook] = useState({
         code: "",
@@ -105,6 +100,97 @@ const Bibliotheque = () => {
         status: "Disponible",
         categorie: "",
     })
+    // Supprimer un livre
+    const OpenDelete = (id) => {
+        setBookToDelete(id)
+        setDeleted(true)
+    }
+    
+    // Fonction pour fermer la modale
+    const CloseDelete = () => {
+        setDeleted(false)
+        setBookToDelete(null)
+    }
+    
+    // Fonction de suppression
+    const handleDelete = async () => {
+        try {
+            if (!bookToDelete) {
+                toast.error("Aucun livre sélectionné pour la suppression")
+                return
+            }
+            
+            const res = await SupprimerLivre(bookToDelete)
+            
+            if (res) {
+                // Recharger la liste des livres
+                const updatedBooks = await ToutLivre()
+                setAllBooks(updatedBooks)
+                
+                // Fermer la modale
+                CloseDelete()
+                toast.success("Livre supprimé avec succès!")
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message || "Erreur lors de la suppression")
+        }
+    }
+    // Supprimer un livre
+    console.log(bookToDelete)
+
+    // Ouvrir le formulaire de modification
+    const selectBook = async (book) => {
+        try {
+            // Remplir le formulaire avec les données du livre sélectionné
+            setBook({
+                code: book.code || "",
+                numero: book.numero || "",
+                titre: book.titre || "",
+                img: book.img || "",
+                auteur: book.auteur || "",
+                lieuEdition: book.lieuEdition || "",
+                dateEdition: book.dateEdition ? book.dateEdition.split('T')[0] : "",
+                origine: book.origine || "",
+                quantite: book.quantite?.toString() || "1",
+                dateEnregistrement: book.dateEnregistrement ? book.dateEnregistrement.split('T')[0] : new Date().toISOString().split('T')[0],
+                status: book.status || "Disponible",
+                categorie: book.categorie || "",
+            });
+            
+            // Afficher l'aperçu de l'image
+            if (book.img) {
+                setImagePreview(book.img);
+                setImageUrl(book.img);
+            }
+            
+            // Stocker l'ID du livre pour la modification
+            setEditingBook(book._id);
+            setIsEditMode(true);
+            setModal(true);
+            
+        } catch (error) {
+            console.log(error);
+            toast.error("Erreur lors du chargement du livre");
+        }
+    }
+
+    const handleMode = () => {
+        setModal(!modal);
+        if (!modal) {
+            resetForm();
+        }
+    }
+
+    // Détecter la taille de l'écran
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Gestion du changement d'image par fichier
     const handleFileUpload = (event) => {
@@ -164,7 +250,7 @@ const Bibliotheque = () => {
     }
 
     const handleOpen = () => {
-        setOpenDialog(!openDialog)
+        setOpenDialog(!openDialog);
         // Réinitialiser le formulaire quand on ouvre/ferme
         if (!openDialog) {
             resetForm();
@@ -190,7 +276,73 @@ const Bibliotheque = () => {
         setImagePreview(null);
         setImageUrl('');
         setSelectedFile(null);
+        setIsEditMode(false);
+        setEditingBook(null);
     }
+
+    // Fonction pour insérer ou modifier un livre
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        try {
+            // Validation des champs requis
+            const requiredFields = ['code', 'numero', 'titre', 'auteur', 'categorie', 'status'];
+            const missingFields = requiredFields.filter(field => !book[field]);
+            
+            if (missingFields.length > 0) {
+                toast.error(`Veuillez remplir les champs requis: ${missingFields.join(', ')}`);
+                setIsLoading(false);
+                return;
+            }
+
+            // Préparer les données pour l'insertion ou modification
+            const bookData = {
+                ...book,
+                // S'assurer que la quantité est un nombre
+                quantite: parseInt(book.quantite) || 1,
+                // Si pas d'image, utiliser une image par défaut
+                img: book.img || 'https://via.placeholder.com/150x200?text=No+Image'
+            };
+
+            console.log('Données à envoyer:', bookData);
+
+            let res;
+            
+            if (isEditMode && editingBook) {
+                // Mode modification
+                res = await ModifierLivre(editingBook, bookData);
+                if (res) {
+                    toast.success('Livre modifié avec succès!');
+                    setIsEditMode(false);
+                    setEditingBook(null);
+                }
+            } else {
+                // Mode ajout
+                res = await InsererLivre(bookData);
+                if (res) {
+                    toast.success('Livre ajouté avec succès!');
+                }
+            }
+
+            if (res) {
+                // Recharger la liste des livres
+                const updatedBooks = await ToutLivre();
+                setAllBooks(updatedBooks);
+                
+                // Fermer le modal et réinitialiser le formulaire
+                setOpenDialog(false);
+                setModal(false);
+                resetForm();
+            }
+            
+        } catch (error) {
+            console.error('Erreur:', error);
+            toast.error(error.message || 'Erreur lors de l\'opération');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Charger les livres
     useEffect(() => {
@@ -336,62 +488,330 @@ const Bibliotheque = () => {
     // Obtenir les catégories uniques
     const categories = ['Tous', ...new Set(allBooks.map(b => b.categorie).filter(Boolean))]
 
-    // Fonction pour insérer un livre
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-
-        try {
-            // Validation des champs requis
-            const requiredFields = ['code', 'numero', 'titre', 'auteur', 'categorie', 'status'];
-            const missingFields = requiredFields.filter(field => !book[field]);
-            
-            if (missingFields.length > 0) {
-                toast.error(`Veuillez remplir les champs requis: ${missingFields.join(', ')}`);
-                setIsLoading(false);
-                return;
-            }
-
-            // Préparer les données pour l'insertion
-            const bookData = {
-                ...book,
-                // S'assurer que la quantité est un nombre
-                quantite: parseInt(book.quantite) || 1,
-                // Si pas d'image, utiliser une image par défaut
-                img: book.img || 'https://via.placeholder.com/150x200?text=No+Image'
-            };
-
-            console.log('Données à envoyer:', bookData);
-
-            // Appeler la fonction d'insertion
-            const res = await InsererLivre(bookData);
-            
-            if (res) {
-                toast.success('Livre ajouté avec succès!');
-                
-                // Recharger la liste des livres
-                const updatedBooks = await ToutLivre();
-                setAllBooks(updatedBooks);
-                
-                // Fermer le modal et réinitialiser le formulaire
-                setOpenDialog(false);
-                resetForm();
-            } else {
-                toast.error('Erreur lors de l\'insertion du livre');
-            }
-        } catch (error) {
-            console.error('Erreur:', error);
-            toast.error(error.message || 'Erreur lors de l\'insertion du livre');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     return (
         <div className="min-h-screen bg-gray-50">
             <NavBarDash />
             
-            <div className="pt-20 px-2 sm:px-4 lg:px-6 xl:px-8">
+            <div className="pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 mt-10">
+               {/* Formulaire de modification  */}
+            {modal && (
+                    <div className='pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 fixed inset-0 h-screen backdrop-blur-xl flex items-center justify-center z-50'>
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+                            <div className="bg-white rounded-xl w-full max-w-full sm:max-w-4xl max-h-[90vh] sm:max-h-[95vh] overflow-y-auto">
+                                <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-amber-100 rounded-lg">
+                                            <FaEdit className="text-lg sm:text-xl text-amber-600" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-lg sm:text-2xl font-bold text-gray-800">
+                                                {isEditMode ? 'Modifier un livre' : 'Ajouter un nouveau livre'}
+                                            </h2>
+                                            <p className="text-gray-600 text-xs sm:text-sm">
+                                                {isEditMode ? 'Modifiez les informations du livre' : 'Remplissez les informations du livre'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleMode}
+                                        className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        <FaX className="text-lg" />
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Code <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="code"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                placeholder="Ex: LIV-001"
+                                                value={book.code}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Numéro <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="numero"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                placeholder="Ex: 001"
+                                                value={book.numero}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Titre <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="titre"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                placeholder="Titre du livre"
+                                                value={book.titre}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+                                        
+                                        {/* Section Image */}
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Image <span className="text-red-500">*</span>
+                                            </label>
+                                            
+                                            <div className="flex flex-col gap-3 sm:gap-4">
+                                                {/* Option 1 : Upload de fichier */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                        Télécharger une image :
+                                                    </label>
+                                                    <div className="flex items-center">
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="block w-full text-xs sm:text-sm text-gray-500 file:mr-2 sm:file:mr-4 file:py-1.5 sm:file:py-2 file:px-2 sm:file:px-4 file:rounded-lg sm:file:rounded-full file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
+                                                            onChange={handleFileUpload}
+                                                        />
+                                                    </div>
+                                                    <p className="mt-1 text-xs text-gray-500">
+                                                        Formats supportés : JPG, PNG, GIF. Taille max : 10MB
+                                                    </p>
+                                                </div>
+
+                                                {/* Séparateur OU */}
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 flex items-center">
+                                                        <div className="w-full border-t border-gray-300"></div>
+                                                    </div>
+                                                    <div className="relative flex justify-center text-sm">
+                                                        <span className="px-2 bg-white text-gray-500 text-xs sm:text-sm">OU</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Option 2 : URL */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                        Entrer une URL d'image :
+                                                    </label>
+                                                    <input
+                                                        type="url"
+                                                        name="img"
+                                                        placeholder="https://exemple.com/image.jpg"
+                                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                        value={imageUrl}
+                                                        onChange={handleImageUrlChange}
+                                                    />
+                                                </div>
+
+                                                {/* Aperçu */}
+                                                {(imagePreview || imageUrl) && (
+                                                    <div className="mt-3 sm:mt-4">
+                                                        <p className="text-sm font-medium text-gray-700 mb-1 sm:mb-2">Aperçu :</p>
+                                                        <div className="relative inline-block">
+                                                            <img 
+                                                                src={imagePreview || imageUrl} 
+                                                                alt="Aperçu" 
+                                                                className="h-32 sm:h-40 w-auto rounded-lg object-cover border border-gray-300"
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                    toast.error('Impossible de charger l\'image. Vérifiez l\'URL.');
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Auteur <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="auteur"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                placeholder="Nom de l'auteur"
+                                                value={book.auteur}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Catégorie <span className="text-red-500">*</span>
+                                            </label>
+                                            <select 
+                                                name="categorie"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base appearance-none"
+                                                value={book.categorie}
+                                                onChange={handleInputChange}
+                                                required
+                                            >
+                                                <option value="">Sélectionner une catégorie</option>
+                                                {categories.filter(cat => cat !== 'Tous').map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Lieu d'édition
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="lieuEdition"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                placeholder="Ville, Pays"
+                                                value={book.lieuEdition}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Date d'édition
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="dateEdition"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                value={book.dateEdition}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Origine
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="origine"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                placeholder="Source du livre"
+                                                value={book.origine}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Quantité <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                name="quantite"
+                                                min="1"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                value={book.quantite}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Date d'enregistrement <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="dateEnregistrement"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base"
+                                                value={book.dateEnregistrement}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                                Statut <span className="text-red-500">*</span>
+                                            </label>
+                                            <select 
+                                                name="status"
+                                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base appearance-none"
+                                                value={book.status}
+                                                onChange={handleInputChange}
+                                                required
+                                            >
+                                                <option value="Disponible">Disponible</option>
+                                                <option value="Emprunté">Emprunté</option>
+                                                <option value="Réservé">Réservé</option>
+                                                <option value="En réparation">En réparation</option>
+                                                <option value="Perdu">Perdu</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="sticky bottom-0 bg-white pt-4 sm:pt-6 border-t border-gray-200">
+                                        <div className="flex flex-col sm:flex-row justify-end gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={handleMode}
+                                                className="px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base order-2 sm:order-1"
+                                                disabled={isLoading}
+                                            >
+                                                Annuler
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="px-4 sm:px-6 py-2.5 sm:py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base order-1 sm:order-2"
+                                                disabled={isLoading}
+                                            >
+                                                {isLoading ? (
+                                                    <>
+                                                        <FaSpinner className="animate-spin" />
+                                                        En cours...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <IoMdAdd />
+                                                        {isEditMode ? 'Modifier le livre' : 'Enregistrer le livre'}
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
+               {/* Fin Formulaire de modification  */}
+                {/* Supprimer un livre */}
+            {
+                deleted && (
+                    <div className='pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 fixed inset-0 h-screen backdrop-blur-xl flex items-center justify-center z-50'>
+                    <div className='w-full lg:w-100 px-4 py-2 bg-white rounded-xl  z-50 border-t-red-500 border-t-5 '>
+                        <div className='flex justify-center w-full'>
+                            <h2 className='text-2xl font-medium text-center'>Vous êtes sur le point de supprimer un livre ! </h2>
+                        </div>
+                        <div className='w-full flex items-center justify-center gap-4 px-2 py-4'>
+                            <button onClick={CloseDelete} className=' px-4 py-2 bg-gray-500 text-white duration-100 hover:bg-gray-600 rounded-xl cursor-pointer'>Annuler</button>
+                            <button onClick={handleDelete}  className=' px-4 py-2 bg-red-500 text-white duration-100 hover:bg-red-600 rounded-xl cursor-pointer' >Supprmier</button>
+                        </div>
+                    </div>
+                </div>
+                )
+            }
+                {/* Supprimer un livre */}
                 <div className="max-w-7xl mx-auto">
                     {/* En-tête */}
                     <div className="mb-6 sm:mb-8 px-2">
@@ -624,6 +1044,7 @@ const Bibliotheque = () => {
                                                     </button>
                                                 </th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Catégorie</th>
+                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Quantité</th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Année</th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Statut</th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Actions</th>
@@ -665,6 +1086,11 @@ const Bibliotheque = () => {
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-100">
+                                                                {book.quantite}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
                                                         <div className="flex items-center gap-2 text-sm text-gray-700">
                                                             <FaRegCalendarAlt className="text-gray-400 hidden sm:block" />
                                                             {formatYear(book.dateEdition)}
@@ -688,6 +1114,7 @@ const Bibliotheque = () => {
                                                             </button>
                                                             <button 
                                                                 className="p-1.5 sm:p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                                onClick={() => selectBook(book)}
                                                                 title="Modifier"
                                                             >
                                                                 <FaEdit className="text-sm sm:text-base" />
@@ -695,6 +1122,7 @@ const Bibliotheque = () => {
                                                             <button 
                                                                 className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                                 title="Supprimer"
+                                                                onClick={()=>OpenDelete(book._id)}
                                                             >
                                                                 <FaTrash className="text-sm sm:text-base" />
                                                             </button>
@@ -844,6 +1272,8 @@ const Bibliotheque = () => {
                     </div>
                 </div>
             </div>
+
+
 
             {/* Modal d'ajout de livre - Version responsive */}
             {openDialog && (
@@ -1144,4 +1574,4 @@ const Bibliotheque = () => {
     )
 }
 
-export default Bibliotheque
+export default Bibliotheque;

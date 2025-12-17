@@ -46,6 +46,6 @@ router.put("/modifierLivre/:id", modifierLivre);
 
 // Route pour supprimer un livre
 // DELETE /api/livres/:id
-router.delete("/supprimerLivre:id", supprimerLivre);
+router.delete("/supprimerLivre/:id", supprimerLivre);
 
 module.exports = router;
