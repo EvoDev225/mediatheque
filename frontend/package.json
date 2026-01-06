@@ -10,11 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@tailwindcss/vite": "^4.1.17",
     "axios": "^1.13.2",
     "data-fns": "^1.1.0",
     "date-fns": "^4.1.0",
+    "emailjs": "^5.0.0",
     "framer-motion": "^12.23.24",
+    "lucide-react": "^0.562.0",
+    "nodemailer": "^7.0.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.6.0",

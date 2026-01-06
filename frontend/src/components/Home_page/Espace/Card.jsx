@@ -1,25 +1,31 @@
 import React from 'react'
-
+import {motion} from "framer-motion"
 const Card = ({key,image,title,description}) => {
   return (
-    <div key={key} className=' w-120 box_shadow duration-300 transition-all hover:scale-105  rounded-2xl overflow-hidden  '>
-        <div className='overflow-hidden w-full'>
-            <img src={image}  className=' object-cover w-full h-80'  alt="" />
-        </div>
-      <div className=' my-5 px-5'>
-        <h1 className=' text-center text-3xl font-bold text-orange-500'>
-            {title}
-        </h1>
-        <p className=' text-center text-xl'>
-            {description}
+      <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay: key * 0.15, duration: 0.5 }}
+      viewport={{ once: false }}
+      className="group relative overflow-hidden rounded-2xl  shadow-lg  transition-all duration-500"
+    >
+      <div className="aspect-4/3 overflow-hidden">
+        <img
+          src={image}
+          alt={title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        />
+      </div>
+      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+        <h3 className=" text-xl md:text-2xl font-semibold mb-2">
+          {title}
+        </h3>
+        <p className="text-white/80 text-sm md:text-base leading-relaxed">
+          {description}
         </p>
       </div>
-      <div className='flex items-center justify-center p-8'>
-        <a href="/espace" className=' duration-300 transition-all hover:bg-orange-400 text-xl mx-auto text-center px-8 py-3 text-white rounded  bg-orange-500'>
-        Voir plus
-      </a>
-      </div>
-    </div>
+    </motion.div>
   )
 }
 

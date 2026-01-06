@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 const Service = () => {
   
   // service items home page
-  const serviceItemsHomePage = [
+  const Items = [
       {
           id: "1",
           item: <FaComputer/> ,
@@ -44,28 +44,37 @@ const Service = () => {
       }
   ]
   return (
-    <motion.div 
-    initial={{translateY:50,opacity:0}}
-    whileInView={{translateY:0,opacity:1}}
-    transition={{delay:1,duration:0.8}}
-    viewport={{once:false}}
+    <section className="overflow-hidden pt-24  py-16 bg-orange-50/75">
+      <div 
     
-    className="w-full z-1 rounded-3xl my-25  xl:w-300 lg: mx-auto flex flex-col px-10 lg:px-0  py-20">
-      <div className="  lg:pl-25">
-        <h1 className=" text-orange-500 text-[30px] md:text-4xl lg:text-6xl font-bold uppercase">
-          Nos services  à <br /> votre dispostion
-        </h1>
-        <p className=" text-xl md:text-2xl  my-2 ">
-          Des services numériques, culturels et administratifs <br /> à votre disposition pour simplifier votre quotidien.
-        </p>
+      className="container mx-auto px-4 lg:px-8 grid gap-16">
+        {/* Title */}
+        <motion.div 
+          initial={{translateY:50,opacity:0}}
+          whileInView={{translateY:0,opacity:1}}
+          transition={{delay:1,duration:0.8}}
+          viewport={{once:false}}
+          className="grid items-center gap-4">
+          <span className="text-orange-500 font-medium text-sm">Nos Services</span>
+          <h2 className="text-4xl lg:text-7xl font-bold max-w-150">
+            Nos services a votre <span className="text-orange-500">disposition</span>
+          </h2>
+            <p className="text-lg md:text-xl max-w-2xl text-gray-400">
+              Des services numériques, culturels et administratifs pour simplifier votre quotidien.
+            </p>
+        </motion.div>
+        {/* Title */}
+        {/* cartes */}
+        <div className=" w-full grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {
+            Items.map((item,index)=>(
+            <Card index={index} key={item.id} item={item.item} title={item.title} description={item.description} />
+            ))
+          }
+        </div>
+        {/* cartes */}
       </div>
-      <div className="flex flex-wrap items-center     gap-8 justify-center ">
-        {serviceItemsHomePage.map((service)=>(
-          <Card key={service.id} item={service.item} title={service.title}  description={service.description} />
-        ))}
-        
-      </div>
-    </motion.div>
+    </section>
   )
 }
 

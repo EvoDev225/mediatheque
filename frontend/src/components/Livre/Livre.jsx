@@ -1,4 +1,5 @@
 import NavbarLivre from "./NavbarLivre";
+import {motion} from "framer-motion"
 import { MdOutlineDashboardCustomize, MdSearch, MdFilterList } from "react-icons/md";
 import { LuSwords } from "react-icons/lu";
 import { FaBook, FaBullseye, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
@@ -52,7 +53,6 @@ const Livre = () => {
                 const res = await ToutLivre();
                 setAllBooks(res);
             } catch (error) {
-                toast.error("Erreur lors de la récupération des livres.");
                 console.error(error);
             }
         };
@@ -139,20 +139,26 @@ const Livre = () => {
     const hasActiveFilters = searchTerm || selectedCategory !== "Tous" || sortBy !== "titre" || sortOrder !== "asc";
 
     return (
-        <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
+        <>
+        <Navbar/>
+        <div className="min-h-screen bg-linear-to-b  from-gray-50 to-white">
             <div className="relative overflow-hidden w-full bg-[url(./assets/img/bibliothèque.jpg)] bg-cover bg-center h-[80vh] hero">
                 <div className="absolute inset-0 bg-black/50"></div>
                 <div className="relative z-10">
-                    <div className="h-20 z-50"><Navbar/></div>
+
                     <div className=" pt-40 lg:pt-60 text-white hero_content w-full lg:w-7xl mx-auto h-full flex items-center   ">
-                        <div className="px-4 lg:px-0 mb-20 lg:mb-40 flex flex-col justify-center  w-full lg:w-4xl gap-6 ">
+                        <motion.div 
+                        initial={{opacity:0,y:50}}
+                        animate={{opacity:1,y:0}}
+                        transition={{delay:0.2,duration:2}}
+                        className="px-4 lg:px-0 mb-20 lg:mb-40 flex flex-col justify-center  w-full lg:w-4xl gap-6 ">
                             <h1 className="text-4xl lg:text-6xl font-bold uppercase tracking-tight">
                                 Votre Portail vers la Lecture et <span className="text-orange-500">la Culture</span>
                             </h1>
                             <p className="text-xl lg:text-2xl text-gray-200 leading-relaxed">
                                 Parcourez notre collection et laissez-vous guider par des œuvres qui éveillent la curiosité, nourrissent l'esprit et inspirent chaque lecteur.
                             </p>
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
             </div>
@@ -434,10 +440,12 @@ const Livre = () => {
                     <a href="#contact" className="bg-orange-500 text-white p-4 rounded-full font-bold text-xl"><FaAngleDown /></a>
                 </div>
                 
-                <Contact/>
             </div>
+                <Contact/>
+
             <Footer/>
         </div>
+        </>
     )
 }
 

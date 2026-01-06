@@ -6,9 +6,9 @@ import Footer from "../../Footer";
 const Propos = () => {
     return (
         <div className="  w-full    ">
+        <Navbar/>
         <Hero/>
         <Container/>
-        <Contact/>
         <Footer/>
         </div>
     );

@@ -342,7 +342,6 @@ const Bibliotheque = () => {
                 // Recharger la liste des livres
                 const updatedBooks = await ToutLivre();
                 setAllBooks(updatedBooks);
-                
                 // Fermer le modal et réinitialiser le formulaire
                 setOpenDialog(false);
                 setModal(false);

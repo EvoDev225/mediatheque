@@ -5,7 +5,7 @@ import salle from "../../../assets/img/salle.jpg";
 import fete from "../../../assets/img/fete.jpg";
 import { motion } from 'framer-motion';
 const Espace = () => {
-    const espaceItemsHomePage = [
+    const Items = [
         {
             id: "1",
             img: bibliotheque,
@@ -33,30 +33,35 @@ const Espace = () => {
         }
     ]
     return (
-        <div className='bg-[#E9ECEF] '>
-            <motion.div
-                initial={{ opacity: 0, translateY: 50 }}
-                whileInView={{ opacity: 1, translateY: 0 }}
-                transition={{ delay: 0.5,duration:0.5 }}
-                viewport={{ once: false }}
-                className="w-full z-1  rounded-3xl my-25  xl:w-300 lg: mx-auto flex flex-col px-10 lg:px-0   py-20">
-                <div className=' lg:pl-25'>
-                    <h1 className=" text-orange-500 text-[30px] md:text-4xl lg:text-5xl font-bold uppercase">
-                        Découvrez <br /> nos Espaces
-                    </h1>
-                    <p className=" text-2xl  my-2 ">
-                        Nous vous accueillons du lundi au samedi de 09h à 17h
-                    </p>
-                </div>
-                <div className="flex flex-wrap items-center my-15   gap-12 justify-center    py-10">
-                    {
-                        espaceItemsHomePage.map((item) => (
-                            <Card key={item.id} image={item.img} title={item.title} description={item.description} />
-                        ))
-                    }
-                </div>
-            </motion.div>
+        <section className="overflow-hidden pt-24  py-16">
+      <div className="container mx-auto px-4 lg:px-8 grid gap-16">
+        {/* Title */}
+        <motion.div 
+          initial={{translateY:50,opacity:0}}
+    whileInView={{translateY:0,opacity:1}}
+    transition={{delay:1,duration:0.8}}
+    viewport={{once:false}}
+        className="grid items-center gap-4">
+        <span className="text-orange-500 font-medium text-sm">Nos Espaces</span>
+        <h2 className="text-4xl lg:text-7xl font-bold ">
+            Découvrez nos <span className="text-orange-500">espaces</span>
+        </h2>
+            <p className="text-lg md:text-xl max-w-2xl text-gray-400">
+            Nous vous accueillons du lundi au samedi de 09h à 17h
+            </p>
+        </motion.div>
+        {/* Title */}
+        {/* cartes */}
+        <div className='grid grid-cols-1  md:grid-cols-2 gap-6 lg:gap-8'>
+            {
+                Items.map((item)=>(
+                    <Card key={item.id} image={item.img} title={item.title} description={item.description}  />
+                ))
+            }
         </div>
+        {/* cartes */}
+      </div>
+    </section>
     )
 }
 

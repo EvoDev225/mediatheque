@@ -104,7 +104,7 @@ const motdepasseChanger = async (email)=>{
         throw error;
     }
 }
-const EnvoyerDemande = async (email,details)=>{
+const EnvoyerDemande = async (email)=>{
     try {
         const transporter = nodemailer.createTransport({
             host: "smtp.gmail.com", // ← CORRIGÉ ICI
