@@ -14,6 +14,8 @@ export const AfficherVisites = async ()=>{
     }
 }
 
+
+
 export const AfficherVisiteDate = async (date)=>{
     try {
         const res = await axios.post(`${AXIOS_URI}/visite/dateAfficherVisite`,{date:date})
@@ -24,6 +26,7 @@ export const AfficherVisiteDate = async (date)=>{
         toast.error(error.response.data.message)
     }
 }
+
 export const InsererVisite= async (visite)=>{
     try {
         const res = await axios.post(`${AXIOS_URI}/visite/creation`,visite)
@@ -47,6 +50,8 @@ export const InsererClient = async (client)=>{
         toast.error(error.response.data.message)
     }
 }
+
+
 export const SupprimerVisite = async (id)=>{
         try {
             const res = await axios.delete(`${AXIOS_URI}/visite/supprimerVisite/${id}`)
@@ -57,3 +62,24 @@ export const SupprimerVisite = async (id)=>{
             toast.error(error.response.data.message)
         }
 }
+export const SupprimerClient = async (id)=>{
+        try {
+            const res = await axios.delete(`${AXIOS_URI}/client/supprimerClient/${id}`)
+            if(res.data.status==="valide"){
+                toast.success(res.data.message)
+            }
+        } catch (error) {
+            toast.error(error.response.data.message)
+        }
+}
+
+export const AfficherClientDate = async (date)=>{
+    try {
+        const res = await axios.post(`${AXIOS_URI}/client/obtenirClientParDate`,{date:date}) 
+        if(res.data.status==="valide"){
+            return res.data.donnee
+        }   
+    } catch (error) {
+        console.log(error)
+    }
+    };

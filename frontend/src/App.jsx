@@ -6,7 +6,6 @@ import Service from "./components/Service_page/Service"
 import Login from "./components/Connexion/Login"
 import Dashboard from "./components/Dashboard/Dashboard"
 import axios from 'axios'
-import VerificationCode from "./Fonctions/Verification/VerificationCode"
 import NouveauMotdepasse from "./NouveauMotdepasse"
 import NouveauMdp from "./Fonctions/Verification/NouveauMdp"
 import { Toaster } from "react-hot-toast"
@@ -36,7 +35,6 @@ axios.defaults.withCredentials = true
             <Route path="/dashboard" element={<Dashboard/>} ></Route>
             <Route path="/interface" element={<Interface/>} ></Route>
             <Route path="/place" element={<Place/>} ></Route>
-            <Route path="/verificationEmail" element={<VerificationCode/>} ></Route>
             <Route path="/nouveauMotdepasse/:token" element={<NouveauMdp/>} ></Route>
             <Route path="/multimedia" element={<Multimedia/>} ></Route>
             <Route path="/convivialite" element={<Convivialite/>} ></Route>

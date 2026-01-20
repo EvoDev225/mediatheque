@@ -4,10 +4,10 @@ const Visite = require("../model/schemaVisite"); // Ajustez le chemin selon votr
 // Créer un nouveau client
 const creerClient = async (req, res) => {
     try {
-        const { nom, prenom, email, contact, visite } = req.body;
+        const {date,numero, nom, prenom, email, contact, visite,profession } = req.body;
 
         // Vérifier si tous les champs requis sont présents
-        if (!nom || !prenom || !email || !contact || !visite) {
+        if (!date ||!numero || !nom || !prenom  || !contact || !visite || !profession) {
             return res.status(400).json({ 
                 message: "Tous les champs sont obligatoires" 
             });
@@ -24,11 +24,14 @@ const creerClient = async (req, res) => {
 
         // Créer le nouveau client
         const nouveauClient = new Client({
+            date,
+            numero,
             nom,
             prenom,
             email,
             contact,
-            visite
+            visite,
+            profession
         });
 
         await nouveauClient.save();
@@ -135,7 +138,7 @@ const modifierClient = async (req, res) => {
         // Mettre à jour le client
         const clientModifie = await Client.findByIdAndUpdate(
             id,
-            { nom, prenom, email, contact, visite },
+            {date, nom, prenom, email, contact, visite,profession },
             { new: true }
         );
 

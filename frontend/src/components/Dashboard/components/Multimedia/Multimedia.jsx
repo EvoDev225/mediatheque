@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import NavBarDash from '../../NavBarDash';
 import toast from 'react-hot-toast';
-import { AfficherVisiteDate, AfficherVisites, InsererClient, InsererVisite, SupprimerVisite } from '../../../../Fonctions/Espace/Visite';
+import { AfficherVisiteDate, AfficherVisites, InsererClient, InsererVisite, SupprimerClient, SupprimerVisite } from '../../../../Fonctions/Espace/Visite';
 import { CiTrash, CiEdit, CiCalendar, CiClock2, CiUser } from "react-icons/ci";
 import { AfficherClient, VerifierAuthentification } from '../../../../Fonctions/Utilisateur/Utilisateur';
-import { FaRegCircleXmark, FaUsers, FaChartLine, FaFilter, FaPlus, FaBuilding } from "react-icons/fa6";
+import { FaRegCircleXmark, FaUsers, FaChartLine, FaFilter, FaPlus, FaBuilding, FaX, FaXmark } from "react-icons/fa6";
 import { MdOutlineDashboard, MdDateRange, MdOutlineEmail, MdPhone } from "react-icons/md";
 import { HiOutlineUserGroup } from "react-icons/hi";
+import { FaEdit } from 'react-icons/fa';
+
 
 const Multimedia = () => {
     const [showForm, setShowForm] = useState(false);
@@ -14,6 +16,8 @@ const Multimedia = () => {
     const [utilisateur, setUtilisateur] = useState(null);
     const [heure, setHeure] = useState(new Date());
     const [visite, setVisite] = useState([]);
+    const [deleteUser, setDeleteUser] = useState(false);
+    const [userIdToDelete, setUserIdToDelete] = useState(null); // Ajouté
     const [dateFilter, setDateFilter] = useState("");
     const [heureVisite, setHeureVisite] = useState("");
     const [showMenu, setShowMenu] = useState(false);
@@ -21,14 +25,16 @@ const Multimedia = () => {
     const [clients, setClients] = useState([]);
     const [activeTab, setActiveTab] = useState('visites');
     const [searchTerm, setSearchTerm] = useState('');
-
     const [client, setClient] = useState({
+        date:"",
+        numero:"",
         nom: '',
         prenom: '',
         email: "",
-        contact: ""
+        contact: "",
+        visite:"",
+        profession:""
     });
-
     const handleMenu = (visiteId = null) => {
         setShowMenu(!showMenu);
         setVisiteASupprimer(visiteId);
@@ -41,10 +47,12 @@ const Multimedia = () => {
         setTypeVisite("");
         setHeureVisite("");
         setClient({
+            date:"",
             nom: '',
             prenom: '',
             email: "",
-            contact: ""
+            contact: "",
+            profession:""
         });
     };
 
@@ -80,69 +88,86 @@ const Multimedia = () => {
         }
     };
 
-    const afficherDateVisite = async (dates) => {
-        setDateFilter(dates);
+   const afficherDateVisite = async (dateInput) => {
+    setDateFilter(dateInput);
 
-        if (!dates || dates === "") {
-            fetchVisite();
-            return;
-        }
+    if (!dateInput || dateInput === "") {
+        fetchVisite();
+        return;
+    }
 
-        try {
-            const data = await AfficherVisiteDate(dates);
-            setVisite(data || []);
-        } catch (error) {
-            console.error(error);
-            toast.error("Erreur lors du filtrage par date");
+    try {
+        // Convertir le format ISO (yyyy-mm-dd) en jj/mm/aaaa
+        let dateFormatee = dateInput;
+        
+        // Si l'input vient d'un champ type="date" (format ISO)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+            const parts = dateInput.split('-');
+            dateFormatee = `${parts[2]}/${parts[1]}/${parts[0]}`; // jj/mm/aaaa
         }
-    };
+        
+        console.log("Date envoyée au backend:", dateFormatee);
+        
+        const data = await AfficherVisiteDate(dateFormatee);
+        setVisite(data || []);
+        
+    } catch (error) {
+        console.error(error);
+        toast.error("Erreur lors du filtrage par date");
+    }
+};
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
 
-        if (!typeVisite) {
-            toast.error("Veuillez sélectionner un type de visite");
-            return;
-        }
+    if (!typeVisite) {
+        toast.error("Veuillez sélectionner un type de visite");
+        return;
+    }
 
-        if (!heureVisite) {
-            toast.error("Veuillez sélectionner une heure");
-            return;
-        }
+    if (!heureVisite) {
+        toast.error("Veuillez sélectionner une heure");
+        return;
+    }
 
-        const donneeVisite = {
-            type: typeVisite.toLowerCase(),
-            date: new Date().toISOString(),
-            heure: heureVisite,
-            nomUtilisateur: utilisateur?.nom || "Inconnu",
-            nomEspace: "Salle Multimédia"
-        };
+    // FORMATER LA DATE EN jj/mm/aaaa
+    const aujourdhui = new Date();
+    const jour = aujourdhui.getDate().toString().padStart(2, '0');
+    const mois = (aujourdhui.getMonth() + 1).toString().padStart(2, '0');
+    const annee = aujourdhui.getFullYear();
+    const dateFormatee = `${jour}/${mois}/${annee}`; // Format jj/mm/aaaa
 
-        try {
-            if (typeVisite === "Formation") {
-                if (!client.nom || !client.prenom || !client.email || !client.contact) {
-                    toast.error("Veuillez remplir tous les champs du client");
-                    return;
-                }
-
-                await InsererClient({
-                    ...client,
-                    visite: typeVisite
-                });
-                toast.success("Client enregistré avec succès");
-            }
-
-            await InsererVisite(donneeVisite);
-            toast.success("Visite enregistrée avec succès");
-
-            await fetchVisite();
-            fermerFormulaire();
-
-        } catch (error) {
-            console.error(error);
-            toast.error("Erreur lors de l'enregistrement");
-        }
+    const donneeVisite = {
+        type: typeVisite.toLowerCase(),
+        date: dateFormatee, // ENVOYER AU FORMAT jj/mm/aaaa
+        heure: heureVisite,
+        nomUtilisateur: utilisateur?.nom || "Inconnu",
+        nomEspace: "Salle Multimédia"
     };
+
+    try {
+        if (!client.nom || !client.prenom || !client.email || !client.contact) {
+            toast.error("Veuillez remplir tous les champs du client");
+            return;
+        }
+        
+        await InsererVisite(donneeVisite);
+        await InsererClient({
+            ...client,
+            visite: typeVisite,
+            date: dateFormatee // Garder le même format
+        });
+        
+        toast.success("Visite et client enregistrés avec succès");
+        await fetchVisite();
+        await fetchClient();
+        fermerFormulaire();
+
+    } catch (error) {
+        console.error(error);
+        toast.error("Erreur lors de l'enregistrement");
+    }
+};
 
     const handleSupprimer = async () => {
         if (!visiteASupprimer) {
@@ -200,11 +225,38 @@ const Multimedia = () => {
         new Date(v.date).toLocaleDateString('fr-FR') === aujourdhui
     );
 
+    // Fonctions pour la suppression des clients
+    const handleDeleteConfirmation = (id) => {
+        setUserIdToDelete(id);
+        setDeleteUser(true);
+    };
+
+    const handleCloseDeleteModal = () => {
+        setDeleteUser(false);
+        setUserIdToDelete(null);
+    };
+
+    const handleDeleteUser = async () => {
+        if (!userIdToDelete) {
+            toast.error("Aucun client sélectionné");
+            return;
+        }
+
+        try {
+            await SupprimerClient(userIdToDelete);
+            await fetchClient(); // Rafraîchir la liste des clients
+            handleCloseDeleteModal();
+        } catch (error) {
+            console.log(error);
+            toast.error("Erreur lors de la suppression du client");
+        }
+    };
+    // console.log(client)
     return (
         <>
             <NavBarDash />
 
-            <div className='min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pt-20 px-4 sm:px-6 lg:px-8 pb-10'>
+            <div className='min-h-screen bg-linear-to-b from-gray-50 to-gray-100 pt-20 px-4 sm:px-6 lg:px-8 pb-10'>
                 {/* Header Section */}
                 <div className='max-w-7xl mx-auto'>
                     <div className='mb-8 pt-6'>
@@ -227,7 +279,7 @@ const Multimedia = () => {
                                     <p className="text-sm text-gray-500">Bonjour,</p>
                                     <p className="font-semibold text-gray-800">{utilisateur?.nom || "Utilisateur"}</p>
                                 </div>
-                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                <div className="h-10 w-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
                                     {utilisateur?.nom?.charAt(0) || "U"}
                                 </div>
                             </div>
@@ -235,7 +287,7 @@ const Multimedia = () => {
 
                         {/* Statistiques Cards */}
                         <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
-                            <div className='bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
+                            <div className='bg-linear-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
                                 <div className='flex justify-between items-start'>
                                     <div>
                                         <p className='text-blue-100 text-sm font-medium mb-2'>Total des visites</p>
@@ -251,7 +303,7 @@ const Multimedia = () => {
                                 </div>
                             </div>
 
-                            <div className='bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
+                            <div className='bg-linear-to-br from-emerald-500 to-green-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
                                 <div className='flex justify-between items-start'>
                                     <div>
                                         <p className='text-emerald-100 text-sm font-medium mb-2'>Visites aujourd'hui</p>
@@ -267,7 +319,7 @@ const Multimedia = () => {
                                 </div>
                             </div>
 
-                            <div className='bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
+                            <div className='bg-linear-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
                                 <div className='flex justify-between items-start'>
                                     <div>
                                         <p className='text-purple-100 text-sm font-medium mb-2'>Moyenne par jour</p>
@@ -326,7 +378,7 @@ const Multimedia = () => {
                                         </div>
                                         <button
                                             onClick={ouvrirFormulaire}
-                                            className='bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2'
+                                            className='bg-linear-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2'
                                         >
                                             <FaPlus />
                                             Ajouter une visite
@@ -449,12 +501,9 @@ const Multimedia = () => {
                                                                 </div>
                                                             </div>
                                                             <div className='flex gap-2'>
-                                                                <button className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg'>
-                                                                    <CiEdit />
-                                                                </button>
                                                                 <button
                                                                     onClick={() => handleMenu(item._id)}
-                                                                    className='p-2 text-red-600 hover:bg-red-50 rounded-lg'
+                                                                    className='p-2 text-red-600 text-2xl bg-orange-100 hover:bg-red-50 rounded-lg'
                                                                 >
                                                                     <CiTrash />
                                                                 </button>
@@ -508,6 +557,12 @@ const Multimedia = () => {
                                                             #
                                                         </th>
                                                         <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
+                                                            Date
+                                                        </th>
+                                                        <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
+                                                            Numero
+                                                        </th>
+                                                        <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
                                                             Client
                                                         </th>
                                                         <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
@@ -516,18 +571,40 @@ const Multimedia = () => {
                                                         <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
                                                             Type de visite
                                                         </th>
+                                                        <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
+                                                            Profession
+                                                        </th>
+                                                        <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
+                                                            Action
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className='divide-y divide-gray-200'>
                                                     {filteredClients.length > 0 ? (
                                                         filteredClients.map((item, index) => (
-                                                            <tr key={item._id} className='hover:bg-gray-50 transition-colors'>
+                                                            <tr key={item._id} className='hover:bg-gray-50 transition-colors'>  
                                                                 <td className='px-6 py-4 whitespace-nowrap'>
                                                                     <div className="flex items-center">
-                                                                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold mr-3">
+                                                                        <div className="h-10 w-10 rounded-full bg-linear-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold mr-3">
                                                                             {item.nom.charAt(0)}{item.prenom.charAt(0)}
                                                                         </div>
-                                                                        <span className="font-medium">{index + 1}</span>
+                                                                        
+                                                                    </div>
+                                                                </td>
+                                                                  <td className='px-6 py-4 whitespace-nowrap'>
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500 flex items-center">
+                                                                            
+                                                                            {new Date(item.date).toLocaleDateString('fr-FR')} 
+                                                                        </p>
+                                                                    </div>
+                                                                </td>
+                                                                 <td className='px-6 py-4 whitespace-nowrap'>
+                                                                    <div>
+                                                                        <p className="text-sm text-gray-500 flex items-center">
+                                                                            
+                                                                            {item.numero} 
+                                                                        </p>
                                                                     </div>
                                                                 </td>
                                                                 <td className='px-6 py-4 whitespace-nowrap'>
@@ -549,6 +626,21 @@ const Multimedia = () => {
                                                                     <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
                                                                         {item.visite}
                                                                     </span>
+                                                                </td>
+                                                                 <td className='px-6 py-4 whitespace-nowrap'>
+                                                                    <div className="flex items-center text-gray-700">
+                        
+                                                                        {item.profession}
+                                                                    </div>
+                                                                </td>
+                                                                 
+                                                                <td className='flex justify-center items-center px-6 py-4'>
+                                                                    <button
+                                                                        onClick={() => handleDeleteConfirmation(item._id)}
+                                                                        className="p-2 text-red-500 text-xl bg-orange-100 hover:bg-orange-200 rounded-xl font-medium transition-colors cursor-pointer"
+                                                                    >
+                                                                        <CiTrash/>
+                                                                    </button>
                                                                 </td>
                                                             </tr>
                                                         ))
@@ -578,7 +670,7 @@ const Multimedia = () => {
                 {/* Today's Visites Summary */}
                 {visitesPourAujourdhui.length > 0 && (
                     <div className="max-w-7xl mx-auto mb-8">
-                        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-6">
+                        <div className="bg-linear-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center">
                                     <div className="bg-indigo-100 p-3 rounded-xl mr-4">
@@ -622,7 +714,7 @@ const Multimedia = () => {
                         <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
                                     w-[95%] max-w-lg bg-white rounded-2xl shadow-2xl z-50
                                     max-h-[90vh] overflow-y-auto">
-                            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+                            <div className="sticky top-0 bg-linear-to-r from-blue-600 to-indigo-700 px-6 py-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xl font-bold text-white">
                                         <FaPlus className="inline mr-2" />
@@ -695,14 +787,39 @@ const Multimedia = () => {
                                     </div>
                                 </div>
 
-                                {typeVisite === "Formation" && (
-                                    <div className="space-y-6 border-t pt-6">
+                                <div className="space-y-6 border-t pt-6">
                                         <h4 className="text-lg font-semibold text-gray-900 flex items-center">
                                             <CiUser className="mr-2" />
                                             Informations du client
                                         </h4>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Date *
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={client.date}
+                                                    onChange={e => setClient({ ...client, date: e.target.value })}
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                                    placeholder="Nom du client"
+                                                    required
+                                                />
+                                            </div>
+                                             <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Numéro *
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={client.numero}
+                                                    onChange={e => setClient({ ...client, numero: e.target.value })}
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                                    placeholder="Numéro du client"
+                                                    required
+                                                />
+                                            </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                                     Nom *
@@ -759,13 +876,25 @@ const Multimedia = () => {
                                                 required
                                             />
                                         </div>
+                                          <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Profession *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={client.profession}
+                                                onChange={e => setClient({ ...client, profession: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                                placeholder="Profession du client"
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                )}
 
                                 <div className="pt-4 border-t">
                                     <button
                                         type="submit"
-                                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                                        className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
                                     >
                                         Enregistrer la visite
                                     </button>
@@ -775,7 +904,7 @@ const Multimedia = () => {
                     </>
                 )}
 
-                {/* Modal de confirmation de suppression */}
+                {/* Modal de confirmation de suppression des VISITES */}
                 {showMenu && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         {/* Overlay léger */}
@@ -825,6 +954,66 @@ const Multimedia = () => {
                                     </button>
                                     <button
                                         onClick={handleSupprimer}
+                                        className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                                    >
+                                        Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal de confirmation de suppression des CLIENTS */}
+                {deleteUser && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        {/* Overlay léger */}
+                        <div 
+                            className="absolute inset-0 bg-black/40"
+                            onClick={handleCloseDeleteModal}
+                        />
+                        
+                        {/* Modal centré */}
+                        <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full z-10">
+                            <div className="p-6">
+                                {/* En-tête */}
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center">
+                                        <div className="bg-red-100 p-2 rounded-lg mr-3">
+                                            <CiTrash className="text-red-600 text-xl" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            Confirmer la suppression
+                                        </h3>
+                                    </div>
+                                    <button
+                                        onClick={handleCloseDeleteModal}
+                                        className="text-gray-400 hover:text-gray-600"
+                                    >
+                                        <FaRegCircleXmark className="text-xl" />
+                                    </button>
+                                </div>
+
+                                {/* Message */}
+                                <div className="mb-6">
+                                    <p className="text-gray-600 mb-2">
+                                        Voulez-vous vraiment supprimer les informations de ce client ?
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                        Cette action ne peut pas être annulée.
+                                    </p>
+                                </div>
+
+                                {/* Boutons */}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={handleCloseDeleteModal}
+                                        className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteUser}
                                         className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                                     >
                                         Supprimer

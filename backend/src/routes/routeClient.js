@@ -5,7 +5,8 @@ const {
     obtenirTousLesClients,
     obtenirClientParId,
     modifierClient,
-    supprimerClient
+    supprimerClient,
+    ObtenirClientParDate
 } = require("../controllers/controllerClient"); // Ajustez le chemin selon votre structure
 
 // Route pour créer un nouveau client

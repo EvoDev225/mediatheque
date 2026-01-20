@@ -149,9 +149,9 @@ const mailVerifier = (email) => {
           <!-- Optional Button -->
           <tr>
             <td align="center" style="padding-bottom:30px;">
-              <a href="https://votre-site.com/dashboard"
-                 style="display:inline-block; background:#4f46e5; color:white; text-decoration:none;
-                 padding:14px 32px; font-size:17px; border-radius:8px; font-weight:600;">
+              <a href="https://localhost:5173/connexion"
+                style="display:inline-block; background:#4f46e5; color:white; text-decoration:none;
+                padding:14px 32px; font-size:17px; border-radius:8px; font-weight:600;">
                 Accéder à mon compte
               </a>
             </td>

@@ -6,13 +6,13 @@ export const Espace =
         {
             img:salle,
             titre:"Salle Multimédia",
-            niveau:2,
+            niveau:1,
             lien:"multimedia"
         },
         {
             img:bb,
             titre:"Bibliothèque Adulte",
-            niveau:1,
+            niveau:2,
             lien:"bibliotheque"
         },
         {

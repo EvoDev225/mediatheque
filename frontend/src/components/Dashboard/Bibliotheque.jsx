@@ -27,7 +27,10 @@ import {
   FaRegTimesCircle,
   FaRegCheckCircle,
   FaSpinner,
-  FaMonument
+  FaMonument,
+  FaPhone,
+  FaUserTie,
+  FaUserCheck
 } from 'react-icons/fa'
 import { 
   FaGear, 
@@ -46,7 +49,9 @@ import {
   MdOutlineSort,
   MdOutlineMoreVert,
   MdOutlineLibraryBooks,
-  MdOutlineCollectionsBookmark
+  MdOutlineCollectionsBookmark,
+  MdOutlinePersonAdd,
+  MdOutlineGroups
 } from "react-icons/md"
 import { 
   IoMdAdd,
@@ -64,28 +69,40 @@ import {
 import NavBarDash from './NavBarDash'
 import { useEffect, useState } from 'react'
 import { AfficherDemande, InsererLivre, ModifierLivre, SupprimerLivre, ToutLivre } from '../../Fonctions/Livre/Flivre'
+import { InsererClient, SupprimerClient } from '../../Fonctions/Espace/Visite'  
 import toast from 'react-hot-toast'
+import { AfficherClient } from '../../Fonctions/Utilisateur/Utilisateur'
 
 const Bibliotheque = () => {
     const [filtre, setFiltre] = useState("Tous")
     const [allBooks, setAllBooks] = useState([])
+    const [allClients, setAllClients] = useState([])
     const [openDialog, setOpenDialog] = useState(false)
+    const [openClientDialog, setOpenClientDialog] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
+    const [clientSearchTerm, setClientSearchTerm] = useState("")
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+    const [clientSortConfig, setClientSortConfig] = useState({ key: null, direction: 'asc' })
     const [currentPage, setCurrentPage] = useState(1)
+    const [clientCurrentPage, setClientCurrentPage] = useState(1)
     const [booksPerPage] = useState(10)
+    const [clientsPerPage] = useState(10)
     const [selectedStatus, setSelectedStatus] = useState("Tous")
     const [imagePreview, setImagePreview] = useState(null);
     const [imageUrl, setImageUrl] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isClientLoading, setIsClientLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [modal, setModal] = useState(false)
     const [editingBook, setEditingBook] = useState(null)
     const [isEditMode, setIsEditMode] = useState(false)
-    const [deleted,setDeleted]=useState(false)
+    const [deleted, setDeleted] = useState(false)
+    const [clientDeleted, setClientDeleted] = useState(false)
     const [bookToDelete, setBookToDelete] = useState(null)
-    const [allDemand,setAllDemande]=useState([])
+    const [clientToDelete, setClientToDelete] = useState(null)
+    const [allDemand, setAllDemande] = useState([])
+    
     // État initial du livre
     const [book, setBook] = useState({
         code: "",
@@ -97,23 +114,56 @@ const Bibliotheque = () => {
         dateEdition: "",
         origine: "",
         quantite: "1",
-        dateEnregistrement: new Date().toISOString().split('T')[0], // Date du jour par défaut
+        dateEnregistrement: new Date().toISOString().split('T')[0],
         status: "Disponible",
         categorie: "",
     })
-    // Supprimer un livre
+    
+    // État initial du client
+    const [client, setClient] = useState({
+        date: "",
+        numero: "",
+        nom: "",
+        prenom: "",
+        email: "",
+        contact: "",
+        visite: "bibliothèque",
+        profession: ""
+    })
+
+    // Charger les livres et clients
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [booksRes, clientsRes] = await Promise.all([
+                    ToutLivre(),
+                    AfficherClient()
+                ])
+                setAllBooks(booksRes)
+                // Filtrer uniquement les clients de la bibliothèque
+                const bibliothequeClients = (clientsRes || []).filter(client => 
+                    client.visite && client.visite.toLowerCase() === 'bibliothèque'
+                )
+                setAllClients(bibliothequeClients)
+            } catch (error) {
+                toast.error("Erreur lors de la récupération des données.")
+                console.error(error)
+            }
+        }
+        fetchData()
+    }, [])
+
+    // Gestion des livres - Suppression
     const OpenDelete = (id) => {
         setBookToDelete(id)
         setDeleted(true)
     }
     
-    // Fonction pour fermer la modale
     const CloseDelete = () => {
         setDeleted(false)
         setBookToDelete(null)
     }
     
-    // Fonction de suppression
     const handleDelete = async () => {
         try {
             if (!bookToDelete) {
@@ -124,11 +174,8 @@ const Bibliotheque = () => {
             const res = await SupprimerLivre(bookToDelete)
             
             if (res) {
-                // Recharger la liste des livres
                 const updatedBooks = await ToutLivre()
                 setAllBooks(updatedBooks)
-                
-                // Fermer la modale
                 CloseDelete()
                 toast.success("Livre supprimé avec succès!")
             }
@@ -137,13 +184,46 @@ const Bibliotheque = () => {
             toast.error(error.message || "Erreur lors de la suppression")
         }
     }
-    // Supprimer un livre
-    console.log(bookToDelete)
 
-    // Ouvrir le formulaire de modification
+    // Gestion des clients - Suppression
+    const OpenClientDelete = (id) => {
+        setClientToDelete(id)
+        setClientDeleted(true)
+    }
+    
+    const CloseClientDelete = () => {
+        setClientDeleted(false)
+        setClientToDelete(null)
+    }
+    
+    const handleClientDelete = async () => {
+        try {
+            if (!clientToDelete) {
+                toast.error("Aucun client sélectionné pour la suppression")
+                return
+            }
+            
+            const res = await SupprimerClient(clientToDelete)
+            
+            if (res) {
+                const updatedClients = await AfficherClient()
+                // Filtrer uniquement les clients de la bibliothèque après suppression
+                const bibliothequeClients = (updatedClients || []).filter(client => 
+                    client.visite && client.visite.toLowerCase() === 'bibliothèque'
+                )
+                setAllClients(bibliothequeClients)
+                CloseClientDelete()
+                toast.success("Client supprimé avec succès!")
+            }
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message || "Erreur lors de la suppression")
+        }
+    }
+
+    // Ouvrir le formulaire de modification de livre
     const selectBook = async (book) => {
         try {
-            // Remplir le formulaire avec les données du livre sélectionné
             setBook({
                 code: book.code || "",
                 numero: book.numero || "",
@@ -159,13 +239,11 @@ const Bibliotheque = () => {
                 categorie: book.categorie || "",
             });
             
-            // Afficher l'aperçu de l'image
             if (book.img) {
                 setImagePreview(book.img);
                 setImageUrl(book.img);
             }
             
-            // Stocker l'ID du livre pour la modification
             setEditingBook(book._id);
             setIsEditMode(true);
             setModal(true);
@@ -183,9 +261,16 @@ const Bibliotheque = () => {
         }
     }
 
+    const handleClientMode = () => {
+        setOpenClientDialog(!openClientDialog);
+        if (!openClientDialog) {
+            resetClientForm();
+        }
+    }
+
     // Détecter la taille de l'écran
     useEffect(() => {
-        const handleDemand = async ()=>{
+        const handleDemand = async () => {
             try {
                 const res = await AfficherDemande()
                 if(res){
@@ -195,6 +280,7 @@ const Bibliotheque = () => {
                 console.log(error)
             }
         }
+        
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
         };
@@ -202,20 +288,17 @@ const Bibliotheque = () => {
         window.addEventListener('resize', handleResize);
         handleDemand()
         return () => window.removeEventListener('resize', handleResize);
-
     }, []);
 
     // Gestion du changement d'image par fichier
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (file) {
-            // Vérifier le type de fichier
             if (!file.type.match('image.*')) {
                 toast.error('Veuillez sélectionner un fichier image valide');
                 return;
             }
 
-            // Vérifier la taille (max 10MB)
             if (file.size > 10 * 1024 * 1024) {
                 toast.error('L\'image ne doit pas dépasser 10MB');
                 return;
@@ -223,16 +306,13 @@ const Bibliotheque = () => {
 
             setSelectedFile(file);
             
-            // Créer un aperçu
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result);
-                // Stocker l'image en base64 dans l'état du livre
                 setBook(prev => ({ ...prev, img: reader.result }));
             };
             reader.readAsDataURL(file);
             
-            // Réinitialiser l'URL si un fichier est sélectionné
             setImageUrl('');
         }
     };
@@ -249,28 +329,59 @@ const Bibliotheque = () => {
         }
     };
 
-    // Gestion du changement des champs du formulaire
+    // Gestion du changement des champs du formulaire livre
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         
-        // Si c'est la date d'enregistrement, formater pour la base de données
         if (name === 'dateEnregistrement' || name === 'dateEdition') {
-            // Convertir au format YYYY-MM-DD si nécessaire
             setBook(prev => ({ ...prev, [name]: value }));
         } else {
             setBook(prev => ({ ...prev, [name]: value }));
         }
     }
 
+    // Gestion du changement des champs du formulaire client
+    const handleClientInputChange = (e) => {
+        const { name, value } = e.target;
+        
+        // Validation pour le champ date (format jj/mm/aaaa)
+        if (name === 'date') {
+            // Permettre uniquement les chiffres et les slash
+            const formattedValue = value.replace(/[^0-9/]/g, '');
+            
+            // Auto-formater en jj/mm/aaaa
+            let formatted = formattedValue;
+            if (formatted.length === 2 && !formatted.includes('/')) {
+                formatted = formatted + '/';
+            } else if (formatted.length === 5 && formatted.split('/')[1]?.length === 2) {
+                formatted = formatted + '/';
+            }
+            
+            // Limiter à 10 caractères (jj/mm/aaaa)
+            if (formatted.length <= 10) {
+                setClient(prev => ({ ...prev, [name]: formatted }));
+            }
+        } else if (name === 'numero') {
+            // Numéro : uniquement des chiffres
+            const formattedValue = value.replace(/[^0-9]/g, '');
+            setClient(prev => ({ ...prev, [name]: formattedValue }));
+        } else if (name === 'contact') {
+            // Contact : format téléphone
+            const formattedValue = value.replace(/[^0-9+]/g, '');
+            setClient(prev => ({ ...prev, [name]: formattedValue }));
+        } else {
+            setClient(prev => ({ ...prev, [name]: value }));
+        }
+    }
+
     const handleOpen = () => {
         setOpenDialog(!openDialog);
-        // Réinitialiser le formulaire quand on ouvre/ferme
         if (!openDialog) {
             resetForm();
         }
     }
 
-    // Réinitialiser le formulaire
+    // Réinitialiser le formulaire livre
     const resetForm = () => {
         setBook({
             code: "",
@@ -293,13 +404,26 @@ const Bibliotheque = () => {
         setEditingBook(null);
     }
 
+    // Réinitialiser le formulaire client
+    const resetClientForm = () => {
+        setClient({
+            date: "",
+            numero: "",
+            nom: "",
+            prenom: "",
+            email: "",
+            contact: "",
+            visite: "bibliothèque",
+            profession: ""
+        })
+    }
+
     // Fonction pour insérer ou modifier un livre
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
 
         try {
-            // Validation des champs requis
             const requiredFields = ['code', 'numero', 'titre', 'auteur', 'categorie', 'status'];
             const missingFields = requiredFields.filter(field => !book[field]);
             
@@ -309,21 +433,15 @@ const Bibliotheque = () => {
                 return;
             }
 
-            // Préparer les données pour l'insertion ou modification
             const bookData = {
                 ...book,
-                // S'assurer que la quantité est un nombre
                 quantite: parseInt(book.quantite) || 1,
-                // Si pas d'image, utiliser une image par défaut
                 img: book.img || 'https://via.placeholder.com/150x200?text=No+Image'
             };
-
-            console.log('Données à envoyer:', bookData);
 
             let res;
             
             if (isEditMode && editingBook) {
-                // Mode modification
                 res = await ModifierLivre(editingBook, bookData);
                 if (res) {
                     toast.success('Livre modifié avec succès!');
@@ -331,7 +449,6 @@ const Bibliotheque = () => {
                     setEditingBook(null);
                 }
             } else {
-                // Mode ajout
                 res = await InsererLivre(bookData);
                 if (res) {
                     toast.success('Livre ajouté avec succès!');
@@ -339,10 +456,8 @@ const Bibliotheque = () => {
             }
 
             if (res) {
-                // Recharger la liste des livres
                 const updatedBooks = await ToutLivre();
                 setAllBooks(updatedBooks);
-                // Fermer le modal et réinitialiser le formulaire
                 setOpenDialog(false);
                 setModal(false);
                 resetForm();
@@ -356,30 +471,77 @@ const Bibliotheque = () => {
         }
     };
 
-    // Charger les livres
-    useEffect(() => {
-        const fetchBooks = async () => {
-            try {
-                const res = await ToutLivre()
-                setAllBooks(res)
-            } catch (error) {
-                toast.error("Erreur lors de la récupération des livres.")
-                console.error(error)
+    // Fonction pour insérer un client
+    const handleClientSubmit = async (e) => {
+        e.preventDefault();
+        setIsClientLoading(true);
+
+        try {
+            // Validation des champs requis
+            const requiredFields = ['date', 'numero', 'nom', 'prenom', 'contact', 'visite', 'profession'];
+            const missingFields = requiredFields.filter(field => !client[field]);
+            
+            if (missingFields.length > 0) {
+                toast.error(`Veuillez remplir les champs requis: ${missingFields.join(', ')}`);
+                setIsClientLoading(false);
+                return;
             }
+
+            // Validation du format de date
+            const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+            if (!dateRegex.test(client.date)) {
+                toast.error('Le format de date doit être jj/mm/aaaa');
+                setIsClientLoading(false);
+                return;
+            }
+
+            // Validation du numéro
+            if (isNaN(client.numero) || client.numero === '') {
+                toast.error('Le numéro doit être un nombre');
+                setIsClientLoading(false);
+                return;
+            }
+
+            const clientData = {
+                ...client,
+                numero: parseInt(client.numero)
+            };
+
+            const res = await InsererClient(clientData);
+            
+            if (res) {
+                const updatedClients = await AfficherClient();
+                // Filtrer uniquement les clients de la bibliothèque après insertion
+                const bibliothequeClients = (updatedClients || []).filter(client => 
+                    client.visite && client.visite.toLowerCase() === 'bibliothèque'
+                )
+                setAllClients(bibliothequeClients);
+                setOpenClientDialog(false);
+                resetClientForm();
+                toast.success('Client enregistré avec succès!');
+            }
+            
+        } catch (error) {
+            console.error('Erreur:', error);
+            toast.error(error.message || 'Erreur lors de l\'enregistrement du client');
+        } finally {
+            setIsClientLoading(false);
         }
-        fetchBooks()
-    }, [])
+    };
 
     // Formater la date
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A'
+        if (typeof dateString === 'string' && dateString.includes('/')) {
+            // Date déjà au format jj/mm/aaaa
+            return dateString;
+        }
         const date = new Date(dateString)
         if (isNaN(date.getTime())) return 'Date invalide'
-        return date.toLocaleDateString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        })
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const year = date.getFullYear()
+        return `${day}/${month}/${year}`
     }
 
     // Formater pour n'afficher que l'année
@@ -412,14 +574,24 @@ const Bibliotheque = () => {
         return matchesSearch && matchesStatus && matchesFiltre;
     });
 
+    // Filtrer les clients (recherche uniquement)
+    const filteredClients = allClients.filter(client => {
+        const searchTermLower = clientSearchTerm.toLowerCase();
+        
+        return !clientSearchTerm ||
+            client.nom?.toLowerCase().includes(searchTermLower) ||
+            client.prenom?.toLowerCase().includes(searchTermLower) ||
+            client.email?.toLowerCase().includes(searchTermLower) ||
+            client.contact?.toLowerCase().includes(searchTermLower) ||
+            client.profession?.toLowerCase().includes(searchTermLower);
+    });
+
     // Trier les livres
     const sortedBooks = [...filteredBooks].sort((a, b) => {
         if (!sortConfig.key) return 0
-
         const aValue = a[sortConfig.key]
         const bValue = b[sortConfig.key]
 
-        // Gestion spéciale pour les dates
         if (sortConfig.key.includes('date')) {
             const aDate = new Date(aValue).getTime()
             const bDate = new Date(bValue).getTime()
@@ -432,14 +604,12 @@ const Bibliotheque = () => {
             return 0
         }
 
-        // Trier les chaînes de caractères
         if (typeof aValue === 'string' && typeof bValue === 'string') {
             return sortConfig.direction === 'asc' 
                 ? aValue.localeCompare(bValue)
                 : bValue.localeCompare(aValue)
         }
 
-        // Trier les nombres
         if (aValue < bValue) {
             return sortConfig.direction === 'asc' ? -1 : 1
         }
@@ -449,11 +619,38 @@ const Bibliotheque = () => {
         return 0
     })
 
-    // Pagination
+    // Trier les clients
+    const sortedClients = [...filteredClients].sort((a, b) => {
+        if (!clientSortConfig.key) return 0
+        const aValue = a[clientSortConfig.key]
+        const bValue = b[clientSortConfig.key]
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return clientSortConfig.direction === 'asc' 
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue)
+        }
+
+        if (aValue < bValue) {
+            return clientSortConfig.direction === 'asc' ? -1 : 1
+        }
+        if (aValue > bValue) {
+            return clientSortConfig.direction === 'asc' ? 1 : -1
+        }
+        return 0
+    })
+
+    // Pagination des livres
     const indexOfLastBook = currentPage * booksPerPage
     const indexOfFirstBook = indexOfLastBook - booksPerPage
     const currentBooks = sortedBooks.slice(indexOfFirstBook, indexOfLastBook)
-    const totalPages = Math.ceil(sortedBooks.length / booksPerPage)
+    const totalBookPages = Math.ceil(sortedBooks.length / booksPerPage)
+
+    // Pagination des clients
+    const indexOfLastClient = clientCurrentPage * clientsPerPage
+    const indexOfFirstClient = indexOfLastClient - clientsPerPage
+    const currentClients = sortedClients.slice(indexOfFirstClient, indexOfLastClient)
+    const totalClientPages = Math.ceil(sortedClients.length / clientsPerPage)
 
     const handleSort = (key) => {
         let direction = 'asc'
@@ -463,6 +660,14 @@ const Bibliotheque = () => {
         setSortConfig({ key, direction })
     }
 
+    const handleClientSort = (key) => {
+        let direction = 'asc'
+        if (clientSortConfig.key === key && clientSortConfig.direction === 'asc') {
+            direction = 'desc'
+        }
+        setClientSortConfig({ key, direction })
+    }
+
     const getSortIcon = (key) => {
         if (sortConfig.key !== key) return <MdOutlineSort className="text-gray-400 text-sm" />
         return sortConfig.direction === 'asc' 
@@ -470,16 +675,22 @@ const Bibliotheque = () => {
             : <FaSortDown className="text-amber-500" />
     }
 
-    // Statistiques
+    const getClientSortIcon = (key) => {
+        if (clientSortConfig.key !== key) return <MdOutlineSort className="text-gray-400 text-sm" />
+        return clientSortConfig.direction === 'asc' 
+            ? <FaSortUp className="text-blue-500" />
+            : <FaSortDown className="text-blue-500" />
+    }
+
+    // Statistiques - Compte uniquement les clients de la bibliothèque
     const stats = {
         total: allBooks.length,
         available: allBooks.filter(b => b.status === 'Disponible' || b.status === 'disponible').length,
         borrowed: allBooks.filter(b => b.status === 'Emprunté' || b.status === 'emprunté').length,
         reserved: allBooks.filter(b => b.status === 'Réservé' || b.status === 'réservé').length,
-        categories: [...new Set(allBooks.map(b => b.categorie))].length
+        categories: [...new Set(allBooks.map(b => b.categorie))].length,
+        clients: allClients.length
     }
-
-    // Démandes simulées
 
     const statusColors = {
         'Disponible': 'bg-green-100 text-green-800 border border-green-200',
@@ -500,7 +711,7 @@ const Bibliotheque = () => {
             <NavBarDash />
             
             <div className="pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 mt-10">
-               {/* Formulaire de modification  */}
+               {/* Formulaire de modification de livre */}
             {modal && (
                     <div className='pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 fixed inset-0 h-screen backdrop-blur-xl flex items-center justify-center z-50'>
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
@@ -802,23 +1013,65 @@ const Bibliotheque = () => {
                     </div>
                 )}
                {/* Fin Formulaire de modification  */}
-                {/* Supprimer un livre */}
-            {
-                deleted && (
+               
+               {/* Supprimer un livre */}
+               {deleted && (
                     <div className='pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 fixed inset-0 h-screen backdrop-blur-xl flex items-center justify-center z-50'>
-                    <div className='w-full lg:w-100 px-4 py-2 bg-white rounded-xl  z-50 border-t-red-500 border-t-5 '>
-                        <div className='flex justify-center w-full'>
-                            <h2 className='text-2xl font-medium text-center'>Vous êtes sur le point de supprimer un livre ! </h2>
+                    <div className='w-full max-w-md px-4 py-8 bg-white rounded-xl z-50 border-t-4 border-t-red-500 shadow-xl'>
+                        <div className='flex justify-center w-full mb-6'>
+                            <FaTrash className='text-4xl text-red-500' />
                         </div>
-                        <div className='w-full flex items-center justify-center gap-4 px-2 py-4'>
-                            <button onClick={CloseDelete} className=' px-4 py-2 bg-gray-500 text-white duration-100 hover:bg-gray-600 rounded-xl cursor-pointer'>Annuler</button>
-                            <button onClick={handleDelete}  className=' px-4 py-2 bg-red-500 text-white duration-100 hover:bg-red-600 rounded-xl cursor-pointer' >Supprmier</button>
+                        <h2 className='text-2xl font-bold text-center text-gray-800 mb-2'>Confirmer la suppression</h2>
+                        <p className='text-gray-600 text-center mb-6'>
+                            Êtes-vous sûr de vouloir supprimer ce livre ? Cette action est irréversible.
+                        </p>
+                        <div className='w-full flex items-center justify-center gap-4 px-2'>
+                            <button 
+                                onClick={CloseDelete} 
+                                className='px-6 py-3 bg-gray-200 text-gray-800 duration-100 hover:bg-gray-300 rounded-lg cursor-pointer font-medium'
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                onClick={handleDelete}  
+                                className='px-6 py-3 bg-red-500 text-white duration-100 hover:bg-red-600 rounded-lg cursor-pointer font-medium'
+                            >
+                                Supprimer
+                            </button>
                         </div>
                     </div>
                 </div>
-                )
-            }
-                {/* Supprimer un livre */}
+                )}
+                
+                {/* Supprimer un client */}
+               {clientDeleted && (
+                    <div className='pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 fixed inset-0 h-screen backdrop-blur-xl flex items-center justify-center z-50'>
+                    <div className='w-full max-w-md px-4 py-8 bg-white rounded-xl z-50 border-t-4 border-t-red-500 shadow-xl'>
+                        <div className='flex justify-center w-full mb-6'>
+                            <FaTrash className='text-4xl text-red-500' />
+                        </div>
+                        <h2 className='text-2xl font-bold text-center text-gray-800 mb-2'>Confirmer la suppression</h2>
+                        <p className='text-gray-600 text-center mb-6'>
+                            Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.
+                        </p>
+                        <div className='w-full flex items-center justify-center gap-4 px-2'>
+                            <button 
+                                onClick={CloseClientDelete} 
+                                className='px-6 py-3 bg-gray-200 text-gray-800 duration-100 hover:bg-gray-300 rounded-lg cursor-pointer font-medium'
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                onClick={handleClientDelete}  
+                                className='px-6 py-3 bg-red-500 text-white duration-100 hover:bg-red-600 rounded-lg cursor-pointer font-medium'
+                            >
+                                Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                )}
+               
                 <div className="max-w-7xl mx-auto">
                     {/* En-tête */}
                     <div className="mb-6 sm:mb-8 px-2">
@@ -831,12 +1084,12 @@ const Bibliotheque = () => {
                             </h1>
                         </div>
                         <p className="text-gray-600 text-sm sm:text-base">
-                            Gérez votre collection de livres, suivez les emprunts et traitez les demandes des lecteurs
+                            Gérez votre collection de livres, les visiteurs de la bibliothèque et traitez les demandes des lecteurs
                         </p>
                     </div>
 
                     {/* Cartes de statistiques - Version responsive */}
-                    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 px-2">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 px-2">
                         {/* Carte Livres Total */}
                         <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                             <div className="flex justify-between items-start">
@@ -904,6 +1157,268 @@ const Bibliotheque = () => {
                                 </div>
                             </div>
                         </div>
+                        
+                        {/* Carte Visiteurs Bibliothèque */}
+                        <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-gray-500 text-xs sm:text-sm font-medium mb-1">Visiteurs Bibliothèque</p>
+                                    <p className="text-2xl sm:text-3xl font-bold text-gray-800">{stats.clients}</p>
+                                    <div className="flex items-center gap-1 mt-2">
+                                        <FaUsers className="text-indigo-500 text-xs" />
+                                        <span className="text-xs text-indigo-600 font-medium">Visiteurs enregistrés</span>
+                                    </div>
+                                </div>
+                                <div className="p-2 sm:p-3 bg-indigo-50 rounded-xl">
+                                    <MdOutlineGroups className="text-xl sm:text-2xl text-indigo-500" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section Clients Bibliothèque */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 sm:mb-8 overflow-hidden mx-2 sm:mx-0">
+                        {/* En-tête de la table Clients */}
+                        <div className="p-4 sm:p-6 border-b border-gray-200">
+                            <div className="flex flex-col gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <MdOutlineGroups className="text-indigo-500" />
+                                        <h2 className="text-lg sm:text-xl font-bold text-gray-800">Visiteurs de la bibliothèque</h2>
+                                    </div>
+                                    <p className="text-gray-600 text-sm">
+                                        {filteredClients.length} visiteur{filteredClients.length !== 1 ? 's' : ''} de bibliothèque trouvé{filteredClients.length !== 1 ? 's' : ''}
+                                        {clientSearchTerm && ` pour "${clientSearchTerm}"`}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    {/* Barre de recherche Clients */}
+                                    <div className="relative flex-1">
+                                        <IoMdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-base sm:text-lg" />
+                                        <input
+                                            type="search"
+                                            placeholder="Rechercher un visiteur..."
+                                            className="pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-full"
+                                            value={clientSearchTerm}
+                                            onChange={(e) => {
+                                                setClientSearchTerm(e.target.value)
+                                                setClientCurrentPage(1)
+                                            }}
+                                        />
+                                        {clientSearchTerm && (
+                                            <button
+                                                onClick={() => setClientSearchTerm("")}
+                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                <FaTimesCircle />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Bouton Ajouter Client */}
+                                    <button
+                                        onClick={handleClientMode}
+                                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex-1 sm:flex-none min-w-[120px]"
+                                    >
+                                        <MdOutlinePersonAdd />
+                                        <span className="text-sm sm:text-base">Nouveau Visiteur</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tableau Clients - Version responsive */}
+                        {filteredClients.length === 0 ? (
+                            <div className="p-8 sm:p-12 text-center">
+                                <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-100 mb-4">
+                                    <MdOutlineGroups className="text-xl sm:text-2xl text-gray-400" />
+                                </div>
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">
+                                    Aucun visiteur de bibliothèque trouvé
+                                </h3>
+                                <p className="text-gray-500 max-w-md mx-auto text-sm sm:text-base">
+                                    {clientSearchTerm 
+                                        ? 'Aucun résultat pour les critères sélectionnés.'
+                                        : 'Aucun visiteur de bibliothèque enregistré.'}
+                                </p>
+                                {clientSearchTerm && (
+                                    <button
+                                        onClick={() => {
+                                            setClientSearchTerm("")
+                                        }}
+                                        className="mt-4 px-4 py-2 text-sm text-indigo-600 hover:text-indigo-700"
+                                    >
+                                        Réinitialiser la recherche
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="overflow-x-auto -mx-2 sm:mx-0">
+                                    <table className="w-full min-w-[800px] sm:min-w-full">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">
+                                                    <button 
+                                                        onClick={() => handleClientSort('numero')} 
+                                                        className="flex items-center gap-1 hover:text-gray-900"
+                                                    >
+                                                        N° {getClientSortIcon('numero')}
+                                                    </button>
+                                                </th>
+                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">
+                                                    <button 
+                                                        onClick={() => handleClientSort('nom')} 
+                                                        className="flex items-center gap-1 hover:text-gray-900"
+                                                    >
+                                                        Nom & Prénom {getClientSortIcon('nom')}
+                                                    </button>
+                                                </th>
+                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">
+                                                    <button 
+                                                        onClick={() => handleClientSort('contact')} 
+                                                        className="flex items-center gap-1 hover:text-gray-900"
+                                                    >
+                                                        Contact {getClientSortIcon('contact')}
+                                                    </button>
+                                                </th>
+                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Email</th>
+                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Date de visite</th>
+                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Profession</th>
+                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Type de visite</th>
+                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {currentClients.map((client, index) => (
+                                                <tr 
+                                                    key={client._id || index} 
+                                                    className="hover:bg-gray-50 transition-colors duration-150"
+                                                >
+                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="p-2 bg-gray-100 rounded-lg hidden xs:block">
+                                                                <FaUserTie className="text-gray-600 text-xs sm:text-sm" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-medium text-gray-900 text-sm sm:text-base">#{client.numero}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                        <div className="font-medium text-gray-900 text-sm sm:text-base">
+                                                            {client.nom} {client.prenom}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <FaPhone className="text-gray-400 text-xs sm:text-sm" />
+                                                            <span className="font-medium text-gray-900 text-sm sm:text-base">{client.contact}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                        <span className="text-gray-900 text-sm sm:text-base truncate max-w-[150px] sm:max-w-none">
+                                                            {client.email || 'N/A'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                        <div className="flex items-center gap-2 text-sm text-gray-700">
+                                                            <FaRegCalendarAlt className="text-gray-400 hidden sm:block" />
+                                                            {formatDate(client.date)}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                                            <FaUserTie className="text-xs" />
+                                                            {client.profession}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                                                            <FaUserCheck className="text-xs" />
+                                                            {client.visite}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
+                                                        <div className="flex items-center gap-1">
+                                                            <button 
+                                                                className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Supprimer"
+                                                                onClick={() => OpenClientDelete(client._id)}
+                                                            >
+                                                                <FaTrash className="text-sm sm:text-base" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Pagination Clients - Version responsive */}
+                                {totalClientPages > 1 && (
+                                    <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="text-xs sm:text-sm text-gray-700">
+                                            Affichage de {indexOfFirstClient + 1} à {Math.min(indexOfLastClient, filteredClients.length)} sur {filteredClients.length} visiteur{filteredClients.length !== 1 ? 's' : ''}
+                                        </div>
+                                        <div className="flex items-center justify-center gap-1 sm:gap-2">
+                                            <button
+                                                onClick={() => setClientCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                disabled={clientCurrentPage === 1}
+                                                className="p-1.5 sm:p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                            >
+                                                <FaArrowLeft className="text-sm" />
+                                            </button>
+                                            
+                                            <div className="flex gap-1">
+                                                {[...Array(totalClientPages)].map((_, i) => {
+                                                    const page = i + 1
+                                                    if (isMobile && page !== clientCurrentPage && 
+                                                        page !== 1 && page !== totalClientPages && 
+                                                        page !== clientCurrentPage - 1 && page !== clientCurrentPage + 1) {
+                                                        return null;
+                                                    }
+                                                    
+                                                    if (
+                                                        page === 1 ||
+                                                        page === totalClientPages ||
+                                                        (page >= clientCurrentPage - 1 && page <= clientCurrentPage + 1)
+                                                    ) {
+                                                        return (
+                                                            <button
+                                                                key={i}
+                                                                onClick={() => setClientCurrentPage(page)}
+                                                                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm ${clientCurrentPage === page 
+                                                                    ? 'bg-indigo-500 text-white' 
+                                                                    : 'border border-gray-300 hover:bg-gray-50'}`}
+                                                            >
+                                                                {page}
+                                                            </button>
+                                                        )
+                                                    } else if (
+                                                        (page === clientCurrentPage - 2 && clientCurrentPage > 3) ||
+                                                        (page === clientCurrentPage + 2 && clientCurrentPage < totalClientPages - 2)
+                                                    ) {
+                                                        return <span key={i} className="px-2 hidden sm:inline">...</span>
+                                                    }
+                                                    return null
+                                                })}
+                                            </div>
+
+                                            <button
+                                                onClick={() => setClientCurrentPage(prev => Math.min(prev + 1, totalClientPages))}
+                                                disabled={clientCurrentPage === totalClientPages}
+                                                className="p-1.5 sm:p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                            >
+                                                <FaArrowRight className="text-sm" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
 
                     {/* Section Livres */}
@@ -1129,7 +1644,7 @@ const Bibliotheque = () => {
                                                             <button 
                                                                 className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                                 title="Supprimer"
-                                                                onClick={()=>OpenDelete(book._id)}
+                                                                onClick={() => OpenDelete(book._id)}
                                                             >
                                                                 <FaTrash className="text-sm sm:text-base" />
                                                             </button>
@@ -1142,7 +1657,7 @@ const Bibliotheque = () => {
                                 </div>
 
                                 {/* Pagination - Version responsive */}
-                                {totalPages > 1 && (
+                                {totalBookPages > 1 && (
                                     <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="text-xs sm:text-sm text-gray-700">
                                             Affichage de {indexOfFirstBook + 1} à {Math.min(indexOfLastBook, filteredBooks.length)} sur {filteredBooks.length} livre{filteredBooks.length !== 1 ? 's' : ''}
@@ -1157,19 +1672,17 @@ const Bibliotheque = () => {
                                             </button>
                                             
                                             <div className="flex gap-1">
-                                                {[...Array(totalPages)].map((_, i) => {
+                                                {[...Array(totalBookPages)].map((_, i) => {
                                                     const page = i + 1
-                                                    // Sur mobile, afficher seulement la page actuelle et les boutons de navigation
                                                     if (isMobile && page !== currentPage && 
-                                                        page !== 1 && page !== totalPages && 
+                                                        page !== 1 && page !== totalBookPages && 
                                                         page !== currentPage - 1 && page !== currentPage + 1) {
                                                         return null;
                                                     }
                                                     
-                                                    // Afficher seulement les pages autour de la page courante
                                                     if (
                                                         page === 1 ||
-                                                        page === totalPages ||
+                                                        page === totalBookPages ||
                                                         (page >= currentPage - 1 && page <= currentPage + 1)
                                                     ) {
                                                         return (
@@ -1185,7 +1698,7 @@ const Bibliotheque = () => {
                                                         )
                                                     } else if (
                                                         (page === currentPage - 2 && currentPage > 3) ||
-                                                        (page === currentPage + 2 && currentPage < totalPages - 2)
+                                                        (page === currentPage + 2 && currentPage < totalBookPages - 2)
                                                     ) {
                                                         return <span key={i} className="px-2 hidden sm:inline">...</span>
                                                     }
@@ -1194,8 +1707,8 @@ const Bibliotheque = () => {
                                             </div>
 
                                             <button
-                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                                disabled={currentPage === totalPages}
+                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalBookPages))}
+                                                disabled={currentPage === totalBookPages}
                                                 className="p-1.5 sm:p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                                             >
                                                 <FaArrowRight className="text-sm" />
@@ -1262,7 +1775,6 @@ const Bibliotheque = () => {
                                                 <div className="text-xs sm:text-sm text-gray-500 mt-1 max-w-xs truncate">
                                                     {demand.message}
                                                 </div>
-                                                
                                             </td>
                                             <td className="py-3 px-3 sm:px-4 lg:px-6">
                                                 <div className="text-xs sm:text-sm text-gray-500 text-center mt-1 max-w-xs truncate">
@@ -1287,9 +1799,7 @@ const Bibliotheque = () => {
                 </div>
             </div>
 
-
-
-            {/* Modal d'ajout de livre - Version responsive */}
+            {/* Modal d'ajout de livre */}
             {openDialog && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
                     <div className="bg-white rounded-xl w-full max-w-full sm:max-w-4xl max-h-[90vh] sm:max-h-[95vh] overflow-y-auto">
@@ -1575,6 +2085,186 @@ const Bibliotheque = () => {
                                             <>
                                                 <IoMdAdd />
                                                 Enregistrer le livre
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal d'ajout de client */}
+            {openClientDialog && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+                    <div className="bg-white rounded-xl w-full max-w-full sm:max-w-4xl max-h-[90vh] sm:max-h-[95vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-100 rounded-lg">
+                                    <MdOutlinePersonAdd className="text-lg sm:text-xl text-indigo-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg sm:text-2xl font-bold text-gray-800">Nouveau Visiteur</h2>
+                                    <p className="text-gray-600 text-xs sm:text-sm">Enregistrer un nouveau visiteur de la bibliothèque</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleClientMode}
+                                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <FaX className="text-lg" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleClientSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                        Date de visite <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="date"
+                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base"
+                                        placeholder="jj/mm/aaaa"
+                                        value={client.date}
+                                        onChange={handleClientInputChange}
+                                        required
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">Format: jj/mm/aaaa</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                        Numéro <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="numero"
+                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base"
+                                        placeholder="Ex: 001"
+                                        value={client.numero}
+                                        onChange={handleClientInputChange}
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                        Nom <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="nom"
+                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base"
+                                        placeholder="Nom de famille"
+                                        value={client.nom}
+                                        onChange={handleClientInputChange}
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                        Prénom <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="prenom"
+                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base"
+                                        placeholder="Prénom"
+                                        value={client.prenom}
+                                        onChange={handleClientInputChange}
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base"
+                                        placeholder="email@exemple.com"
+                                        value={client.email}
+                                        onChange={handleClientInputChange}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                        Contact <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="contact"
+                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base"
+                                        placeholder="+33 1 23 45 67 89"
+                                        value={client.contact}
+                                        onChange={handleClientInputChange}
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                        Type de visite <span className="text-red-500">*</span>
+                                    </label>
+                                    <select 
+                                        name="visite"
+                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base appearance-none"
+                                        value={client.visite}
+                                        onChange={handleClientInputChange}
+                                        required
+                                    >
+                                        <option value="bibliothèque">Bibliothèque</option>
+                                        <option value="autre">Autre</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                                        Profession <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="profession"
+                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base"
+                                        placeholder="Profession du visiteur"
+                                        value={client.profession}
+                                        onChange={handleClientInputChange}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="sticky bottom-0 bg-white pt-4 sm:pt-6 border-t border-gray-200">
+                                <div className="flex flex-col sm:flex-row justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleClientMode}
+                                        className="px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base order-2 sm:order-1"
+                                        disabled={isClientLoading}
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 sm:px-6 py-2.5 sm:py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base order-1 sm:order-2"
+                                        disabled={isClientLoading}
+                                    >
+                                        {isClientLoading ? (
+                                            <>
+                                                <FaSpinner className="animate-spin" />
+                                                En cours...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <MdOutlinePersonAdd />
+                                                Enregistrer le visiteur
                                             </>
                                         )}
                                     </button>

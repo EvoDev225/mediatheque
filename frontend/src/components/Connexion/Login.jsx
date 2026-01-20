@@ -1,4 +1,4 @@
-import { FaRegUserCircle, FaLock, FaEnvelope, FaArrowLeft, FaKey } from "react-icons/fa";
+import { FaRegUserCircle, FaLock, FaEnvelope, FaArrowLeft, FaKey, FaEyeSlash, FaEye } from "react-icons/fa";
 import { useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { toast } from "react-hot-toast";
@@ -15,6 +15,20 @@ const Login = () => {
         email: "",
         motdepasse: ""
     });
+
+     const [type,setType]=useState("password")
+        const [eye,setEye]=useState(false)
+        const handleType=()=>{
+            if(type==="password"){
+                setType("text")
+                setEye(true)
+            } 
+            if(type==="text"){
+                setType("password")
+                setEye(false)
+            }
+            
+        }
 
     const Connexion = async (e) => {
         e.preventDefault();
@@ -85,7 +99,7 @@ const Login = () => {
                 }}
             />
             
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
                 <div className="absolute top-0 left-0 right-0 p-6">
                     <a 
                         href="/" 
@@ -111,7 +125,7 @@ const Login = () => {
 
                     <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
                         {/* En-tête colorée */}
-                        <div className="bg-gradient-to-r from-orange-500 to-orange-600 py-6 px-8">
+                        <div className="bg-linear-to-r from-orange-500 to-orange-600 py-6 px-8">
                             <div className="flex items-center justify-center">
                                 <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm">
                                     <FaRegUserCircle className="text-white text-4xl" />
@@ -149,7 +163,7 @@ const Login = () => {
 
                                     {/* Champ Mot de passe */}
                                     <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between relative">
                                             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                                                 Mot de passe
                                             </label>
@@ -167,13 +181,33 @@ const Login = () => {
                                             </div>
                                             <input
                                                 onChange={(e) => setUtilisateur({ ...utilisateur, motdepasse: e.target.value })}
-                                                type="password"
+                                                type={type}
                                                 id="password"
                                                 name="password"
                                                 placeholder="••••••••"
                                                 className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200"
                                                 required
                                             />
+                                            <div className='absolute z-50  top-3 right-11  rounded-full'>
+                                            {
+                                                eye ? (
+                                                    <button
+                                                    onClick={()=>handleType()}
+                                                    >
+                                                        <FaEyeSlash className='text-2xl text-gray-500'/>
+                                                    </button>
+                                                ):(
+                                                    <button
+                                                    onClick={()=>handleType()}
+                                                    >
+                                                        <FaEye className='text-2xl text-gray-500'/>
+                                                    </button>
+                                                )
+                                            }
+                                            
+                                                    
+                                                    
+                                                </div>
                                         </div>
                                     </div>
 
@@ -181,7 +215,7 @@ const Login = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                                        className="w-full bg-linear-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                                     >
                                         {loading ? (
                                             <span className="flex items-center justify-center">
@@ -232,7 +266,7 @@ const Login = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                                        className="w-full bg-linear-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                                     >
                                         {loading ? (
                                             <span className="flex items-center justify-center">

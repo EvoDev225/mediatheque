@@ -20,36 +20,11 @@ const inscription = async  (req,res)=>{
             return res.status(404).json({message:"Ce service n'existe pas !"})
         }
         const motdepasseHashe = await bcrypt.hash(motdepasse,10)
-        const verificationJeton = genererJeton()
         const utilisateur = await Utilisateur.create({
-            nom,prenom,email,motdepasse:motdepasseHashe,contact,niveau,service,
-            verificationJeton : verificationJeton,
-            dateVerificationJeton:Date.now() + 24*60*60*1000
+            nom,prenom,email,motdepasse:motdepasseHashe,contact,niveau,service
         })
         genererJWT(res,utilisateur._id)
-        await mailVerification(utilisateur.email,verificationJeton)
         return res.status(201).json({stats:"valide",message:"Nouvel utilisateur crée !",donnee:{...utilisateur._doc,motdepasse:undefined}})
-    } catch (error) {
-        return res.status(500).json({message:"Une erreur est survenue sur le serveur !",erreur:error.message})
-    }
-}
-
-const emailVerifier= async (req,res)=>{
-    const {code} = req.body
-    try {
-        const utilisateur = await Utilisateur.findOne({
-            verificationJeton:code,
-            dateVerificationJeton:{$gt:Date.now()}
-        })  
-        if(!utilisateur){
-            return res.status(400).json({message:"Le jeton est invalide ou a expiré !"})
-        }
-        utilisateur.estVerifier = true,
-        utilisateur.verificationJeton = undefined,
-        utilisateur.dateVerificationJeton = undefined
-        await utilisateur.save()
-        await emailValide(utilisateur.email)
-        return res.status(200).json({status:"valide",message:"Email vérifié !",donnee:{...utilisateur._doc,motdepasse:undefined}})
     } catch (error) {
         return res.status(500).json({message:"Une erreur est survenue sur le serveur !",erreur:error.message})
     }
@@ -69,11 +44,7 @@ const connexion = async (req,res)=>{
         if(!verifierMotdepasse){
             return res.status(400).json({message:"Le mot de passe est incorrecte !"})
         }
-        const estVerifier = utilisateur.estVerifier
-        if(!estVerifier){
-            return res.status(400).json({message:"Vous n'êts pas authentifié !"})
-        }
-        genererJWT(res,utilisateur._id)
+        genererJWT(res,utilisateur)
         return res.status(200).json({status: "valide", message: "Vous êtes connecté !",donnee:utilisateur });
     } catch (error) {
         console.log("Une erreur est survenue lors de la connexion de l'utilisateur :", error.message);
@@ -82,7 +53,8 @@ const connexion = async (req,res)=>{
 }
 const deconnexion = async(req,res)=>{
 try {
-    res.clearCookie("token")
+    res.clearCookie("token_admin");
+    res.clearCookie("token_employe");
     return res.status(200).json({status:"valide",message:"Vous êtes deconnecté !"})
 } catch (error) {
     return res.status(500).json({message:"Erreur serveur",erreur:error.message})
@@ -104,7 +76,7 @@ const motdepasseOublier = async (req,res)=>{
         utilisateur.reinitialisationMotdepasse = reinitialisationMotdepasse
         utilisateur.dateReinitialisationMotdepasse = dateReinitialisationMotdepasse
         await utilisateur.save()
-        await oublierMotdepasse(utilisateur.email,`${process.env.CLEINT_URI}/verificationOTP/${reinitialisationMotdepasse}`)
+        await oublierMotdepasse(utilisateur.email,`${process.env.CLIENT_URI}/verificationOTP/${reinitialisationMotdepasse}`)
         return res.status(200).json({status:"valide",message:"L'email de récupération a été envoyé !",donnee:utilisateur})
     } catch (error) {
         return res.status(500).json({message:"Erreur serveur !",erreur:error.message})
@@ -375,39 +347,92 @@ const reactiverUtilisateur = async (req, res) => {
     }
 }
 
-const changerAutorisationEmploye = async (req,res)=>{
-        const {id}=req.params
-        const utilisateurConnecte = req.utilisateur
-        const {niveau} = req.body
-        if(!niveau){
-            return res.status(400).json({message:"Veuillez renseigner le champ !"})
-        }
-        if (!id) {
+const changerAutorisationEmploye = async (req,res) => {
+    const {id} = req.params
+    const utilisateurConnecte = req.utilisateur
+    const {niveau} = req.body
+    
+    if(!niveau){
+        return res.status(400).json({message:"Veuillez renseigner le champ !"})
+    }
+    
+    if (!id) {
         return res.status(400).json({ message: "ID requis !" })
     }
+    
     if (!utilisateurConnecte || utilisateurConnecte.type !== 'administrateur') {
         return res.status(403).json({ 
             message: "Accès refusé. Seul un administrateur peut changer le niveau de sécurité !." 
         })
     }
+    
+    // Définir le mapping niveau -> service
+    const niveauServiceMap = {
+        "1": "Salle Multimedia",
+        "2": "Bibliothèque Adulte", 
+        "3": "Salle Convivialite"
+    };
+    
+    // Vérifier si le niveau est valide
+    if (!niveauServiceMap[niveau]) {
+        return res.status(400).json({message:"Niveau invalide. Doit être 1, 2 ou 3."})
+    }
+    
+    // Récupérer le service correspondant au niveau
+    const service = niveauServiceMap[niveau];
+    
     try {
         const utilisateur = await Utilisateur.findById(id)
         if(!utilisateur){
-            return res.status(404).json({message:"Cet utlisateur est introuvable"})
+            return res.status(404).json({message:"Cet utilisateur est introuvable"})
         }
-        await Utilisateur.findByIdAndUpdate(id,{niveau},{new:true})
-        return res.status(200).json({status:"valide",message:"Le niveau de sécurité a été mis à jour !",donnee:{...utilisateur._doc,motdepasse:undefined}})
+        
+        // Mettre à jour le niveau ET le service
+        await Utilisateur.findByIdAndUpdate(
+            id,
+            {
+                niveau: niveau,
+                service: service
+            },
+            {new:true}
+        )
+        
+        return res.status(200).json({
+            status: "valide",
+            message: "Le niveau de sécurité et le service ont été mis à jour !",
+            donnee: {
+                ...utilisateur._doc,
+                niveau: niveau,
+                service: service,
+                motdepasse: undefined
+            }
+        })
     } catch (error) {
         return res.status(500).json({message:"Erreur serveur",erreur:error.message})
     }
-    
+}
+
+const supprimerUtilisateur = async (req, res) => {
+    const { id } = req.params
+    if (!id){
+        return res.status(400).json({ message: "ID requis !" })
+    }
+    try {
+        const user = await Utilisateur.findByIdAndDelete(id)
+        if (!user) {
+            return res.status(404).json({ message: "Utilisateur introuvable !" })
+        }
+        return res.status(200).json({ status: "valide", message: "Utilisateur supprimé avec succès !" })
+    } catch (error) {
+        return res.status(500).json({message:"Erreur serveur",erreur:error.message})
+        
+    }
 
 }
 
 
-module.exports = {
+module.exports = { supprimerUtilisateur,
     inscription, 
-    emailVerifier,
     connexion,
     deconnexion,
     motdepasseOublier,

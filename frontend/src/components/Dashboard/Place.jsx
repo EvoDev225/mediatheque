@@ -102,7 +102,7 @@ const Place = () => {
     }, [client]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
             <NavBarDash />
 
             <div className="pt-16 md:pt-20">
@@ -116,7 +116,7 @@ const Place = () => {
 
                     {/* HEADER avec dégradé */}
                     <div className="mb-8">
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
+                        <div className="bg-linear-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between">
                                 <div>
                                     <h1 className="text-2xl md:text-3xl font-bold">
@@ -202,7 +202,7 @@ const Place = () => {
                                         Toutes périodes
                                     </p>
                                 </div>
-                                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-2xl shadow-md">
+                                <div className="bg-linear-to-br from-blue-500 to-blue-600 p-4 rounded-2xl shadow-md">
                                     <FaChartLine className="text-white text-2xl" />
                                 </div>
                             </div>
@@ -226,7 +226,7 @@ const Place = () => {
                                             </p>
                                             <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                                                 <div 
-                                                    className="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full"
+                                                    className="bg-linear-to-r from-green-500 to-emerald-600 h-2 rounded-full"
                                                     style={{ width: `${Math.min(stats.topEspacePercentage, 100)}%` }}
                                                 ></div>
                                             </div>
@@ -236,7 +236,7 @@ const Place = () => {
                                         </span>
                                     </div>
                                 </div>
-                                <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-md ml-3">
+                                <div className="bg-linear-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-md ml-3">
                                     <FaBuilding className="text-white text-2xl" />
                                 </div>
                             </div>
@@ -256,7 +256,7 @@ const Place = () => {
                                         {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                                     </p>
                                 </div>
-                                <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-4 rounded-2xl shadow-md">
+                                <div className="bg-linear-to-br from-orange-500 to-amber-600 p-4 rounded-2xl shadow-md">
                                     <FaCalendarAlt className="text-white text-2xl" />
                                 </div>
                             </div>
@@ -276,7 +276,7 @@ const Place = () => {
                                         Sur les 30 derniers jours
                                     </p>
                                 </div>
-                                <div className="bg-gradient-to-br from-purple-500 to-violet-600 p-4 rounded-2xl shadow-md">
+                                <div className="bg-linear-to-br from-purple-500 to-violet-600 p-4 rounded-2xl shadow-md">
                                     <FaUsers className="text-white text-2xl" />
                                 </div>
                             </div>
@@ -288,7 +288,7 @@ const Place = () => {
                         
                         {/* Carte des visites */}
                         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                            <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <div className="px-6 py-5 border-b border-gray-100 bg-linear-to-r from-blue-50 to-indigo-50">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center">
                                         <div className="bg-blue-100 p-3 rounded-xl mr-4">
@@ -386,7 +386,7 @@ const Place = () => {
 
                         {/* Carte des clients */}
                         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                            <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
+                            <div className="px-6 py-5 border-b border-gray-100 bg-linear-to-r from-green-50 to-emerald-50">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center">
                                         <div className="bg-green-100 p-3 rounded-xl mr-4">

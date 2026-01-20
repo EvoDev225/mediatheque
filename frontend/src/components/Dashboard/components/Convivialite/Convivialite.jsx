@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import NavBarDash from "../../NavBarDash";
 import toast from 'react-hot-toast';
-import { AfficherVisiteDate, AfficherVisites, InsererClient, InsererVisite, SupprimerVisite } from '../../../../Fonctions/Espace/Visite';
+import { AfficherVisiteDate, AfficherVisites, InsererClient, InsererVisite, SupprimerVisite, SupprimerClient } from '../../../../Fonctions/Espace/Visite';
 import { CiTrash, CiEdit, CiCalendar, CiClock2, CiUser } from "react-icons/ci";
 import { AfficherClient, VerifierAuthentification } from '../../../../Fonctions/Utilisateur/Utilisateur';
-import { FaRegCircleXmark, FaUsers, FaChartLine, FaFilter, FaPlus, FaBuilding, FaChair, FaCalendarCheck, FaCalendarDay } from "react-icons/fa6";
+import { FaRegCircleXmark, FaUsers, FaChartLine, FaFilter, FaPlus, FaBuilding, FaChair, FaCalendarCheck, FaCalendarDay, FaXmark } from "react-icons/fa6";
 import { MdOutlineDashboard, MdDateRange, MdOutlineEmail, MdPhone, MdMeetingRoom } from "react-icons/md";
 import { HiOutlineUserGroup } from "react-icons/hi";
 import { IoStatsChartOutline } from "react-icons/io5";
 import { useNavigate } from 'react-router-dom';
+import { FaTrash } from 'react-icons/fa';
 
 const Convivialite = () => {
-    const navigate=useNavigate()
+    const navigate = useNavigate();
     // États pour les réservations
     const [showForm, setShowForm] = useState(false);
     const [typeReservation, setTypeReservation] = useState("");
@@ -25,23 +26,137 @@ const Convivialite = () => {
     const [clients, setClients] = useState([]);
     const [activeTab, setActiveTab] = useState('reservations');
     const [searchTerm, setSearchTerm] = useState('');
-    const [auth,setAuth]=useState([])
+    const [auth, setAuth] = useState([]);
     const [salle, setSalle] = useState("");
+    
+    // Nouveaux états pour la suppression des clients
+    const [showDeleteClientModal, setShowDeleteClientModal] = useState(false);
+    const [clientToDelete, setClientToDelete] = useState(null);
+    const [clientToDeleteInfo, setClientToDeleteInfo] = useState(null); // Pour afficher les infos du client
     
     // États pour le formulaire
     const [client, setClient] = useState({
+        date: "",
+        numero: "",
         nom: '',
         prenom: '',
         email: "",
-        contact: ""
+        contact: "",
+        profession: ""
     });
+
+    // Fonction pour convertir yyyy-mm-dd en jj/mm/aaaa (simple et robuste)
+    const convertirEnJJMMAAAA = (dateISO) => {
+        if (!dateISO) return '';
+        
+        // Si c'est déjà au format jj/mm/aaaa
+        if (/^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(dateISO)) {
+            return dateISO;
+        }
+        
+        // Si c'est au format yyyy-mm-dd (input date HTML)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
+            const [annee, mois, jour] = dateISO.split('-');
+            return `${jour}/${mois}/${annee}`;
+        }
+        
+        // Si c'est un objet Date
+        if (dateISO instanceof Date) {
+            const jour = dateISO.getDate().toString().padStart(2, '0');
+            const mois = (dateISO.getMonth() + 1).toString().padStart(2, '0');
+            const annee = dateISO.getFullYear();
+            return `${jour}/${mois}/${annee}`;
+        }
+        
+        console.warn("Format de date non reconnu:", dateISO);
+        return '';
+    };
+
+    // Fonction pour convertir jj/mm/aaaa en yyyy-mm-dd (si besoin)
+    const convertirEnAAAAMMJJ = (dateJJMMAAAA) => {
+        if (!dateJJMMAAAA) return '';
+        
+        // Si c'est déjà au format yyyy-mm-dd
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateJJMMAAAA)) {
+            return dateJJMMAAAA;
+        }
+        
+        // Si c'est au format jj/mm/aaaa
+        if (/^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(dateJJMMAAAA)) {
+            const [jour, mois, annee] = dateJJMMAAAA.split('/');
+            return `${annee}-${mois}-${jour}`;
+        }
+        
+        return '';
+    };
+
+    // Fonction pour obtenir la date d'aujourd'hui formatée en jj/mm/aaaa
+    const getTodayJJMMAAAA = () => {
+        const aujourdhui = new Date();
+        const jour = aujourdhui.getDate().toString().padStart(2, '0');
+        const mois = (aujourdhui.getMonth() + 1).toString().padStart(2, '0');
+        const annee = aujourdhui.getFullYear();
+        return `${jour}/${mois}/${annee}`;
+    };
+
+    // Fonction pour obtenir la date d'aujourd'hui formatée en yyyy-mm-dd
+    const getTodayAAAAMMJJ = () => {
+        const aujourdhui = new Date();
+        const jour = aujourdhui.getDate().toString().padStart(2, '0');
+        const mois = (aujourdhui.getMonth() + 1).toString().padStart(2, '0');
+        const annee = aujourdhui.getFullYear();
+        return `${annee}-${mois}-${jour}`;
+    };
+
+    // Fonction pour ouvrir la modal de suppression de client
+    const openDeleteClientModal = (clientId, clientInfo) => {
+        setClientToDelete(clientId);
+        setClientToDeleteInfo(clientInfo);
+        setShowDeleteClientModal(true);
+    };
+
+    // Fonction pour fermer la modal de suppression de client
+    const closeDeleteClientModal = () => {
+        setShowDeleteClientModal(false);
+        setClientToDelete(null);
+        setClientToDeleteInfo(null);
+    };
+
+    // Fonction pour supprimer un client
+    const handleDeleteClient = async () => {
+        if (!clientToDelete) {
+            toast.error("Aucun client sélectionné");
+            return;
+        }
+
+        try {
+            await SupprimerClient(clientToDelete);
+            toast.success("Client supprimé avec succès");
+            
+            // Rafraîchir la liste des clients
+            await fetchClientsReservation();
+            
+            // Fermer la modal
+            closeDeleteClientModal();
+            
+        } catch (error) {
+            console.error("Erreur lors de la suppression du client:", error);
+            toast.error("Erreur lors de la suppression du client");
+        }
+    };
 
     const handleMenu = (reservationId = null) => {
         setShowMenu(!showMenu);
         setReservationASupprimer(reservationId);
     };
 
-    const ouvrirFormulaire = () => setShowForm(true);
+    const ouvrirFormulaire = () => {
+        setShowForm(true);
+        setClient(prev => ({
+            ...prev,
+            date: getTodayAAAAMMJJ() // Initialiser avec aujourd'hui en yyyy-mm-dd
+        }));
+    };
 
     const fermerFormulaire = () => {
         setShowForm(false);
@@ -49,15 +164,16 @@ const Convivialite = () => {
         setHeureReservation("");
         setSalle("");
         setClient({
+            date: "",
+            numero: "",
             nom: '',
             prenom: '',
             email: "",
-            contact: ""
+            contact: "",
+            profession: ""
         });
     };
 
-   
-    
     useEffect(() => {
         const timer = setInterval(() => {
             setHeure(new Date());
@@ -65,7 +181,6 @@ const Convivialite = () => {
         fetchUser();
         fetchReservations();
         fetchClientsReservation();
-        
 
         return () => clearInterval(timer);
     }, []);
@@ -87,8 +202,10 @@ const Convivialite = () => {
             const reservationsConvivialite = data.filter(v => 
                 v.nomEspace === "Salle Convivialité" || 
                 v.nomEspace === "Salle de Réunion" ||
-                v.type === "mariage" || // Pour la compatibilité
-                v.type === "réservation"
+                v.type === "mariage" ||
+                v.type === "réservation" ||
+                v.type === "réunion" ||
+                v.type === "événement"
             );
             setReservations(reservationsConvivialite || []);
         } catch (error) {
@@ -115,27 +232,74 @@ const Convivialite = () => {
         }
     };
 
-    const afficherDateReservation = async (dates) => {
-        setDateFilter(dates);
+    const afficherDateReservation = async (dateInput) => {
+        console.log("=== DÉBUT FILTRAGE PAR DATE ===");
+        console.log("Date sélectionnée (input yyyy-mm-dd):", dateInput);
+        
+        // Mettre à jour le state avec la date de l'input
+        setDateFilter(dateInput);
 
-        if (!dates || dates === "") {
+        // Si la date est vide, afficher toutes les réservations
+        if (!dateInput || dateInput === "") {
+            console.log("Pas de date sélectionnée, affichage de toutes les réservations");
             fetchReservations();
             return;
         }
 
         try {
-            const data = await AfficherVisiteDate(dates);
+            // Convertir la date de l'input (yyyy-mm-dd) en format jj/mm/aaaa pour l'API
+            const dateFormatee = convertirEnJJMMAAAA(dateInput);
+            console.log("Date formatée pour l'API (jj/mm/aaaa):", dateFormatee);
+            
+            if (!dateFormatee) {
+                toast.error("Format de date invalide");
+                return;
+            }
+
+            // Appeler l'API avec la date formatée en jj/mm/aaaa
+            console.log("Appel API avec la date:", dateFormatee);
+            const data = await AfficherVisiteDate(dateFormatee);
+            
+            console.log("Données reçues de l'API:", data);
+            
+            if (!data) {
+                toast.error("Aucune donnée reçue du serveur");
+                setReservations([]);
+                return;
+            }
+            
+            // Filtrer uniquement les réservations de convivialité
             const reservationsFiltrees = data.filter(v => 
                 v.nomEspace === "Salle Convivialité" || 
                 v.nomEspace === "Salle de Réunion" ||
                 v.type === "mariage" ||
-                v.type === "réservation"
+                v.type === "réservation" ||
+                v.type === "réunion" ||
+                v.type === "événement"
             );
+            
+            console.log("Réservations filtrées:", reservationsFiltrees.length, "trouvée(s)");
             setReservations(reservationsFiltrees || []);
+            
+            // Message de succès
+            if (reservationsFiltrees.length === 0) {
+                toast.info(`Aucune réservation trouvée pour le ${dateFormatee}`);
+            } else {
+                toast.success(`${reservationsFiltrees.length} réservation(s) trouvée(s) pour le ${dateFormatee}`);
+            }
+            
         } catch (error) {
-            console.error(error);
-            toast.error("Erreur lors du filtrage par date");
+            console.error("Erreur lors du filtrage par date:", error);
+            toast.error("Erreur lors du filtrage par date: " + (error.message || "Erreur inconnue"));
         }
+        
+        console.log("=== FIN FILTRAGE PAR DATE ===");
+    };
+
+    const reinitialiserFiltreDateReservation = () => {
+        setDateFilter("");
+        fetchReservations();
+        toast.info("Filtre de date réinitialisé");
     };
 
     const handleSubmit = async (e) => {
@@ -162,9 +326,13 @@ const Convivialite = () => {
             return;
         }
 
+        // Préparer les dates au format jj/mm/aaaa pour l'API
+        const dateReservationJJMMAAAA = getTodayJJMMAAAA();
+        const dateClientJJMMAAAA = convertirEnJJMMAAAA(client.date);
+
         const donneeReservation = {
             type: typeReservation.toLowerCase(),
-            date: new Date().toISOString(),
+            date: dateReservationJJMMAAAA, // Format jj/mm/aaaa
             heure: heureReservation,
             nomUtilisateur: utilisateur?.nom || "Inconnu",
             nomEspace: salle,
@@ -173,24 +341,34 @@ const Convivialite = () => {
             contactClient: client.contact
         };
 
+        const donneeClient = {
+            ...client,
+            date: dateClientJJMMAAAA, // Format jj/mm/aaaa
+            visite: typeReservation
+        };
+
+        console.log("Données à envoyer - Réservation:", donneeReservation);
+        console.log("Données à envoyer - Client:", donneeClient);
+
         try {
-            // Toujours insérer le client pour les réservations
-            await InsererClient({
-                ...client,
-                visite: typeReservation // Type de réservation comme type de visite
-            });
-            toast.success("Client enregistré avec succès");
-
+            // Insérer d'abord le client
+            await InsererClient(donneeClient);
+            
+            // Puis insérer la réservation
             await InsererVisite(donneeReservation);
-            toast.success("Réservation enregistrée avec succès");
+            
+            toast.success("Réservation et client enregistrés avec succès");
 
+            // Rafraîchir les données
             await fetchReservations();
-            await fetchClientsReservation(); // Rafraîchir la liste des clients
+            await fetchClientsReservation();
+            
+            // Fermer le formulaire
             fermerFormulaire();
 
         } catch (error) {
-            console.error(error);
-            toast.error("Erreur lors de l'enregistrement");
+            console.error("Erreur complète:", error);
+            toast.error("Erreur lors de l'enregistrement: " + (error.message || "Erreur inconnue"));
         }
     };
 
@@ -208,20 +386,20 @@ const Convivialite = () => {
             setReservationASupprimer(null);
         } catch (error) {
             console.error(error);
-            toast.error("Erreur lors de la suppression");
+            toast.error("Erreur lors de la suppression: " + (error.message || "Erreur inconnue"));
         }
     };
 
     // Statistiques
     const nombreTotalReservations = reservations.length;
 
-    const aujourdhui = new Date().toLocaleDateString('fr-FR');
+    const aujourdhui = getTodayJJMMAAAA();
     const reservationsAujourdhui = reservations.filter(v =>
-        new Date(v.date).toLocaleDateString('fr-FR') === aujourdhui
+        convertirEnJJMMAAAA(v.date) === aujourdhui
     ).length;
 
     const datesUniques = [...new Set(reservations.map(v =>
-        new Date(v.date).toLocaleDateString('fr-FR')
+        convertirEnJJMMAAAA(v.date)
     ))];
     const nombreJoursAvecReservations = datesUniques.length;
     const moyenneParJour = nombreJoursAvecReservations > 0
@@ -230,21 +408,26 @@ const Convivialite = () => {
 
     // Filtrer les clients en fonction du terme de recherche
     const filteredClients = clients.filter(c =>
-        c.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.contact.toLowerCase().includes(searchTerm.toLowerCase())
+        c.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.contact?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const reservationsPourAujourdhui = reservations.filter(v =>
-        new Date(v.date).toLocaleDateString('fr-FR') === aujourdhui
+        convertirEnJJMMAAAA(v.date) === aujourdhui
     );
+
+    // Fonction pour afficher les dates correctement (jj/mm/aaaa)
+    const afficherDate = (dateString) => {
+        return convertirEnJJMMAAAA(dateString);
+    };
 
     return (
         <>
             <NavBarDash />
 
-            <div className='min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pt-20 px-4 sm:px-6 lg:px-8 pb-10'>
+            <div className='min-h-screen bg-linear-to-b from-gray-50 to-gray-100 pt-20 px-4 sm:px-6 lg:px-8 pb-10'>
                 {/* Header Section */}
                 <div className='max-w-7xl mx-auto'>
                     <div className='mb-8 pt-6'>
@@ -267,7 +450,7 @@ const Convivialite = () => {
                                     <p className="text-sm text-gray-500">Bonjour,</p>
                                     <p className="font-semibold text-gray-800">{utilisateur?.nom || "Utilisateur"}</p>
                                 </div>
-                                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold">
+                                <div className="h-10 w-10 rounded-full bg-linear-to-r from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold">
                                     {utilisateur?.nom?.charAt(0) || "U"}
                                 </div>
                             </div>
@@ -275,7 +458,7 @@ const Convivialite = () => {
 
                         {/* Statistiques Cards */}
                         <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
-                            <div className='bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
+                            <div className='bg-linear-to-r from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
                                 <div className='flex justify-between items-start'>
                                     <div>
                                         <p className='text-amber-100 text-sm font-medium mb-2'>Total des réservations</p>
@@ -291,7 +474,7 @@ const Convivialite = () => {
                                 </div>
                             </div>
 
-                            <div className='bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
+                            <div className='bg-linear-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
                                 <div className='flex justify-between items-start'>
                                     <div>
                                         <p className='text-orange-100 text-sm font-medium mb-2'>Réservations aujourd'hui</p>
@@ -307,7 +490,7 @@ const Convivialite = () => {
                                 </div>
                             </div>
 
-                            <div className='bg-gradient-to-r from-amber-700 to-amber-800 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
+                            <div className='bg-linear-to-r from-amber-700 to-amber-800 rounded-2xl p-6 text-white shadow-xl transform transition-transform hover:-translate-y-1'>
                                 <div className='flex justify-between items-start'>
                                     <div>
                                         <p className='text-amber-100 text-sm font-medium mb-2'>Moyenne par jour</p>
@@ -363,6 +546,15 @@ const Convivialite = () => {
                                                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                             />
                                             <MdDateRange className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                            {dateFilter && (
+                                                <button
+                                                    onClick={reinitialiserFiltreDateReservation}
+                                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    title="Effacer le filtre"
+                                                >
+                                                    <FaXmark />
+                                                </button>
+                                            )}
                                         </div>
                                         <button
                                             onClick={ouvrirFormulaire}
@@ -399,7 +591,6 @@ const Convivialite = () => {
                                                         <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
                                                             Heure
                                                         </th>
-                                                    
                                                         <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
                                                             Actions
                                                         </th>
@@ -423,7 +614,7 @@ const Convivialite = () => {
                                                                         {item.type === 'mariage' ? 'Mariage' : 
                                                                         item.type === 'réunion' ? 'Réunion' :
                                                                         item.type === 'événement' ? 'Événement' : 
-                                                                        item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                                                                        item.type?.charAt(0)?.toUpperCase() + item.type?.slice(1)}
                                                                     </span>
                                                                 </td>
                                                                 <td className='px-6 py-4 whitespace-nowrap'>
@@ -440,7 +631,7 @@ const Convivialite = () => {
                                                                 <td className='px-6 py-4 whitespace-nowrap'>
                                                                     <div className="flex items-center text-gray-700">
                                                                         <CiCalendar className="mr-2" />
-                                                                        {new Date(item.date).toLocaleDateString('fr-FR')}
+                                                                        {afficherDate(item.date)}
                                                                     </div>
                                                                 </td>
                                                                 <td className='px-6 py-4 whitespace-nowrap'>
@@ -494,7 +685,7 @@ const Convivialite = () => {
                                                                         {item.type === 'mariage' ? 'Mariage' : 
                                                                         item.type === 'réunion' ? 'Réunion' :
                                                                         item.type === 'événement' ? 'Événement' : 
-                                                                        item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                                                                        item.type?.charAt(0)?.toUpperCase() + item.type?.slice(1)}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -510,7 +701,7 @@ const Convivialite = () => {
                                                         <div className='grid grid-cols-2 gap-3 text-sm text-gray-600'>
                                                             <div className="flex items-center">
                                                                 <CiCalendar className="mr-2" />
-                                                                {new Date(item.date).toLocaleDateString('fr-FR')}
+                                                                {afficherDate(item.date)}
                                                             </div>
                                                             <div className="flex items-center">
                                                                 <CiClock2 className="mr-2" />
@@ -576,6 +767,9 @@ const Convivialite = () => {
                                                         <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
                                                             Date d'inscription
                                                         </th>
+                                                        <th className='px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider'>
+                                                            Action
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className='divide-y divide-gray-200'>
@@ -584,7 +778,7 @@ const Convivialite = () => {
                                                             <tr key={item._id} className='hover:bg-gray-50 transition-colors'>
                                                                 <td className='px-6 py-4 whitespace-nowrap'>
                                                                     <div className="flex items-center">
-                                                                        <div className="h-10 w-10 rounded-full bg-gradient-to-r from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold mr-3">
+                                                                        <div className="h-10 w-10 rounded-full bg-linear-to-r from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold mr-3">
                                                                             {item.nom?.charAt(0) || ''}{item.prenom?.charAt(0) || ''}
                                                                         </div>
                                                                         <span className="font-medium">{index + 1}</span>
@@ -618,14 +812,23 @@ const Convivialite = () => {
                                                                 <td className='px-6 py-4 whitespace-nowrap'>
                                                                     <div className="flex items-center text-gray-500 text-sm">
                                                                         <CiCalendar className="mr-2" />
-                                                                        {item.dateInscription ? new Date(item.dateInscription).toLocaleDateString('fr-FR') : 'N/A'}
+                                                                        {afficherDate(item.date)}
                                                                     </div>
+                                                                </td>
+                                                                <td className='px-6 py-4 whitespace-nowrap flex items-center justify-center'>
+                                                                    <button
+                                                                        onClick={() => openDeleteClientModal(item._id, item)}
+                                                                        className="flex items-center bg-orange-100 hover:bg-orange-200 w-fit p-3 rounded-xl text-red-500 hover:text-red-700 text-sm transition-colors cursor-pointer"
+                                                                        title="Supprimer ce client"
+                                                                    >
+                                                                        <FaTrash className="text-sm" />
+                                                                    </button>
                                                                 </td>
                                                             </tr>
                                                         ))
                                                     ) : (
                                                         <tr>
-                                                            <td colSpan="5" className='px-6 py-12 text-center'>
+                                                            <td colSpan="6" className='px-6 py-12 text-center'>
                                                                 <div className="text-gray-400">
                                                                     <CiUser className="text-4xl mx-auto mb-4" />
                                                                     <p className="text-lg font-medium">Aucun client de réservation trouvé</p>
@@ -649,7 +852,7 @@ const Convivialite = () => {
                 {/* Today's Reservations Summary */}
                 {reservationsPourAujourdhui.length > 0 && (
                     <div className="max-w-7xl mx-auto mb-8">
-                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-2xl p-6">
+                        <div className="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-2xl p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center">
                                     <div className="bg-amber-100 p-3 rounded-xl mr-4">
@@ -684,7 +887,7 @@ const Convivialite = () => {
                                                 {v.type === 'mariage' ? 'Mariage' : 
                                                  v.type === 'réunion' ? 'Réunion' :
                                                  v.type === 'événement' ? 'Événement' : 
-                                                 v.type.charAt(0).toUpperCase() + v.type.slice(1)}
+                                                 v.type?.charAt(0)?.toUpperCase() + v.type?.slice(1)}
                                             </span>
                                             <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
                                                 {v.nomEspace || "Salle Convivialité"}
@@ -700,15 +903,13 @@ const Convivialite = () => {
                 {/* Modal d'ajout de réservation */}
                 {showForm && (
                     <>
-                        {/* Overlay avec z-index plus bas */}
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40" 
                              onClick={fermerFormulaire} />
                         
-                        {/* Modal avec z-index plus élevé */}
                         <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
                                        w-[95%] max-w-lg bg-white rounded-2xl shadow-2xl z-50
                                        max-h-[90vh] overflow-y-auto">
-                            <div className="sticky top-0 bg-gradient-to-r from-amber-600 to-orange-700 px-6 py-4">
+                            <div className="sticky top-0 bg-linear-to-r from-amber-600 to-orange-700 px-6 py-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xl font-bold text-white">
                                         <FaPlus className="inline mr-2" />
@@ -753,11 +954,7 @@ const Convivialite = () => {
                                             required
                                         >
                                             <option value="">Sélectionner une salle...</option>
-                                            <option value="Salle Convivialité">Salle Convivialité (20 personnes)</option>
-                                            <option value="Salle de Réunion A">Salle de Réunion A (10 personnes)</option>
-                                            <option value="Salle de Réunion B">Salle de Réunion B (8 personnes)</option>
-                                            <option value="Salle Polyvalente">Salle Polyvalente (50 personnes)</option>
-                                            <option value="Salle Mariage">Salle Mariage (100 personnes)</option>
+                                            <option value="Salle Convivialité">Salle Convivialité (+ 100 personnes)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -765,15 +962,15 @@ const Convivialite = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Date de réservation *
+                                            Date de réservation
                                         </label>
                                         <input
-                                            type="date"
-                                            value={dateFilter || new Date().toISOString().split('T')[0]}
-                                            onChange={(e) => setDateFilter(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
-                                            required
+                                            type="text"
+                                            value={getTodayJJMMAAAA()}
+                                            readOnly
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
                                         />
+                                        <p className="text-xs text-gray-500 mt-1">Date automatique du jour (jj/mm/aaaa)</p>
                                     </div>
 
                                     <div>
@@ -790,7 +987,6 @@ const Convivialite = () => {
                                     </div>
                                 </div>
 
-                                {/* Informations du client - TOUJOURS VISIBLES */}
                                 <div className="space-y-6 border-t pt-6">
                                     <h4 className="text-lg font-semibold text-gray-900 flex items-center">
                                         <CiUser className="mr-2" />
@@ -798,6 +994,31 @@ const Convivialite = () => {
                                     </h4>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Date *
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={client.date}
+                                                onChange={e => setClient({ ...client, date: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Numéro *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={client.numero}
+                                                onChange={e => setClient({ ...client, numero: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                                                placeholder="Numéro"
+                                                required
+                                            />
+                                        </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 Nom *
@@ -855,13 +1076,26 @@ const Convivialite = () => {
                                                 required
                                             />
                                         </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Profession *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={client.profession}
+                                                onChange={e => setClient({ ...client, profession: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                                                placeholder="Profession du client"
+                                                required
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="pt-4 border-t">
                                     <button
                                         type="submit"
-                                        className="w-full bg-gradient-to-r from-amber-600 to-amber-700 text-white py-3 px-4 rounded-lg font-medium hover:from-amber-700 hover:to-amber-800 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                                        className="w-full bg-linear-to-r from-amber-600 to-amber-700 text-white py-3 px-4 rounded-lg font-medium hover:from-amber-700 hover:to-amber-800 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
                                     >
                                         Enregistrer la réservation
                                     </button>
@@ -871,19 +1105,16 @@ const Convivialite = () => {
                     </>
                 )}
 
-                {/* Modal de confirmation de suppression */}
+                {/* Modal de confirmation de suppression des RÉSERVATIONS */}
                 {showMenu && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        {/* Overlay léger */}
                         <div 
                             className="absolute inset-0 bg-black/40"
                             onClick={() => handleMenu()}
                         />
                         
-                        {/* Modal centré */}
                         <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full z-10">
                             <div className="p-6">
-                                {/* En-tête */}
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center">
                                         <div className="bg-red-100 p-2 rounded-lg mr-3">
@@ -901,7 +1132,6 @@ const Convivialite = () => {
                                     </button>
                                 </div>
 
-                                {/* Message */}
                                 <div className="mb-6">
                                     <p className="text-gray-600 mb-2">
                                         Voulez-vous vraiment supprimer cette réservation ?
@@ -911,7 +1141,6 @@ const Convivialite = () => {
                                     </p>
                                 </div>
 
-                                {/* Boutons */}
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => handleMenu()}
@@ -924,6 +1153,88 @@ const Convivialite = () => {
                                         className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                                     >
                                         Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* NOUVELLE MODAL : Confirmation de suppression des CLIENTS */}
+                {showDeleteClientModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div 
+                            className="absolute inset-0 bg-black/40"
+                            onClick={closeDeleteClientModal}
+                        />
+                        
+                        <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full z-10">
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center">
+                                        <div className="bg-red-100 p-2 rounded-lg mr-3">
+                                            <FaTrash className="text-red-600 text-xl" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            Supprimer le client
+                                        </h3>
+                                    </div>
+                                    <button
+                                        onClick={closeDeleteClientModal}
+                                        className="text-gray-400 hover:text-gray-600"
+                                    >
+                                        <FaRegCircleXmark className="text-xl" />
+                                    </button>
+                                </div>
+
+                                {clientToDeleteInfo && (
+                                    <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                        <div className="flex items-center mb-3">
+                                            <div className="h-12 w-12 rounded-full bg-linear-to-r from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold mr-3">
+                                                {clientToDeleteInfo.nom?.charAt(0) || ''}{clientToDeleteInfo.prenom?.charAt(0) || ''}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-semibold text-gray-900">
+                                                    {clientToDeleteInfo.nom} {clientToDeleteInfo.prenom}
+                                                </h4>
+                                                <p className="text-sm text-gray-600">{clientToDeleteInfo.email}</p>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                            <div className="text-gray-600">
+                                                <span className="font-medium">Contact:</span> {clientToDeleteInfo.contact}
+                                            </div>
+                                            <div className="text-gray-600">
+                                                <span className="font-medium">Type:</span> {clientToDeleteInfo.visite || 'Réservation'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mb-6">
+                                    <p className="text-gray-600 mb-2">
+                                        Êtes-vous sûr de vouloir supprimer ce client ?
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                        Cette action supprimera définitivement toutes les informations du client.
+                                        <br />
+                                        <span className="font-medium text-red-600">Attention : Cette action est irréversible.</span>
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={closeDeleteClientModal}
+                                        className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteClient}
+                                        className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <FaTrash className="text-sm" />
+                                        Supprimer définitivement
                                     </button>
                                 </div>
                             </div>

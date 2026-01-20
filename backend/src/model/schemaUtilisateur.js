@@ -12,14 +12,11 @@ const schemaUtilisateur = new mongoose.Schema({
         required:true
     },
     niveau:{type:Number,min:1,max:5,default:1,required:true},
-    estVerifier:{type:Boolean,default:false},
     service: { 
         type: String,   
         required: true  // Ajustez selon vos besoins
     },
     actif: { type: Boolean, default: true },
-    verificationJeton : String,
-    dateVerificationJeton:Date,
     reinitialisationMotdepasse:String,
     dateReinitialisationMotdepasse:Date
 },{timestamps:true})

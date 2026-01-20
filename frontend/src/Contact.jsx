@@ -130,7 +130,7 @@ const Contact = () => {
                 <input
                   type="email"
                   placeholder="Votre email"
-                  name="email"
+                  name="user_email"
                   className="h-12  px-2 outline-orange-500 border border-gray-400  rounded-lg"
                   required
                 />
@@ -142,19 +142,17 @@ const Contact = () => {
                 required
               />
               <button type="submit" className="w-full h-12 text-base cursor-pointer duration-500 hover:bg-amber-600 flex justify-center items-center  font-bold text-white bg-orange-500 rounded-xl">
-                 {loading ? (
-                                   <div className='flex items-center gap-2.5'>
-                                        <div className='p-4 border-b border-white animate-spin rounded-full' />
-                                        <p className='text-white'>En cours</p>
-                                    </div>
-                                ) : (
-                                  <div className="flex items-center justify-center gap-2">
-                                    <IoIosSend  className="w-4 h-4 mr-2" />
-                                    Envoyer le message
-                                  </div>
-                                )}
-                
-                 
+            {loading ? (
+                  <div className='flex items-center gap-2.5'>
+                  <div className='p-4 border-b border-white animate-spin rounded-full' />
+                      <p className='text-white'>En cours</p>
+                  </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <IoIosSend  className="w-4 h-4 mr-2" />
+                  Envoyer le message
+                </div>
+              )}
               </button>
             </form>
           </motion.div>

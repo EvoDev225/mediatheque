@@ -15,7 +15,7 @@ const routerDemande = require("./routes/routeDemande")
 dotenv.config()
 app.use(helmet())
 app.use(express.json())
-app.use(cors({origin:"http://localhost:5173",credentials:true}))
+app.use(cors({origin:process.env.CLIENT_URI,credentials:true}))
 app.use(cookieParser())
 
 connectDB()
@@ -30,6 +30,6 @@ app.use('/demandes',routerDemande)
 
 
 
-app.listen(process.env.PORT ,()=>{
+app.listen(process.env.PORT || 3000 ,()=>{
     console.log(`Le serveur tourne !`)
 })

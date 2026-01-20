@@ -10,7 +10,11 @@ import {
   FaBuilding,
   FaUserCheck,
   FaUserTimes,
-  FaExpeditedssl
+  FaExpeditedssl,
+  FaTrash,
+  FaEye,
+  FaEyeDropper,
+  FaEyeSlash
 } from "react-icons/fa"
 import { 
   IoMdAddCircleOutline, 
@@ -26,6 +30,7 @@ import {
   DesactiverUtilisateur, 
   NouveauUtilisateur, 
   ReactiverUtilisateur, 
+  SupprimerUtilisateur, 
   ToutUtilisateur, 
   VerifierAuthentification 
 } from "../../Fonctions/Utilisateur/Utilisateur"
@@ -33,6 +38,8 @@ import {
 const Dashboard = () => {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
+    const [deleteUser, setDeleteUser] = useState(null)
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [utilisateur, setUtilisateur] = useState({
         nom: "",
         prenom: "",
@@ -43,6 +50,53 @@ const Dashboard = () => {
         niveau: "",
         service: ""
     })
+
+    // Changer le type du password
+    const [type,setType]=useState("password")
+    const [eye,setEye]=useState(false)
+    const handleType=()=>{
+        if(type==="password"){
+            setType("text")
+            setEye(true)
+        } 
+        if(type==="text"){
+            setType("password")
+            setEye(false)
+        }
+        
+    }
+    
+    // Changer le type du password
+
+    // Suppression d'un utilisateur
+
+    const confirmDeleteUser = (id)=>{
+        setDeleteUser(id)
+        setShowDeleteModal(true)
+        
+    }
+    const cancelDelete = ()=>{
+        setShowDeleteModal(false)
+        setDeleteUser(null)
+    }
+
+    const handleDeleteUser = async ()=>{
+        try {
+            const res = await SupprimerUtilisateur(deleteUser)
+            toast.success(res)
+                setShowDeleteModal(false)
+                setDeleteUser(null)
+                window.location.reload()
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+
+    // Suppression d'un utilisateur
+
+
+    // console.log(utilisateur)
     const [niveau, setNiveau] = useState({
         id: "",
         niveau: ""
@@ -107,24 +161,71 @@ const Dashboard = () => {
         setState(!state)
     }
 
-    const changerNiveau = async (e) => {
-        e.preventDefault()
-        try {
-            if (niveau.niveau >= 1 && niveau.niveau <= 3) {
-                await ChangerNiveau(niveau.id, niveau.niveau)
-                setStateNiveau(false)
-                // Mise à jour optimiste
-                setEmploye(prev => prev.map(emp => 
-                    emp._id === niveau.id ? { ...emp, niveau: niveau.niveau } : emp
-                ))
-                toast.success("Niveau modifié avec succès")
-
-            }
-            window.location.reload()
-        } catch (error) {
-            toast.error(error.message || "Erreur lors du changement de niveau")
-        }
+const changerNiveau = async (e) => {
+    e.preventDefault();
+    
+    // Vérifier si un niveau est sélectionné
+    if (!niveau.niveau) {
+        toast.error("Veuillez sélectionner un niveau");
+        return;
     }
+    
+    // Convertir en chaîne de caractères pour être sûr
+    const nouveauNiveau = niveau.niveau.toString();
+    
+    // Vérifier que le niveau est valide
+    if (!["1", "2", "3"].includes(nouveauNiveau)) {
+        toast.error("Niveau invalide. Doit être 1, 2 ou 3.");
+        return;
+    }
+    
+    try {
+        // Définir le mapping niveau -> service
+        const niveauServiceMap = {
+            "1": "Salle Multimedia",
+            "2": "Bibliothèque Adulte", 
+            "3": "Salle Convivialite"
+        };
+        
+        const nouveauService = niveauServiceMap[nouveauNiveau];
+        
+        if (!nouveauService) {
+            throw new Error("Impossible de déterminer le service pour ce niveau");
+        }
+        
+        // Afficher un toast de chargement
+        const loadingToast = toast.loading("Mise à jour en cours...");
+        
+        // Appeler l'API
+        await ChangerNiveau(niveau.id, nouveauNiveau);
+        
+        // Mise à jour optimiste
+        setEmploye(prev => prev.map(emp => 
+            emp._id === niveau.id ? { 
+                ...emp, 
+                niveau: nouveauNiveau,
+                service: nouveauService 
+            } : emp
+        ));
+        
+        // Fermer le modal
+        setStateNiveau(false);
+        
+        // Mettre à jour le toast
+        toast.dismiss(loadingToast);
+        toast.success(`Niveau ${nouveauNiveau} (${nouveauService}) appliqué avec succès`);
+        
+        // Réinitialiser l'état du niveau
+        setNiveau({
+            id: "",
+            niveau: ""
+        });
+        
+    } catch (error) {
+        console.error("Erreur lors du changement de niveau:", error);
+        toast.error(error.message || "Erreur lors du changement de niveau");
+    }
+};
 
     const desactiver = async (id) => {
         try {
@@ -141,26 +242,52 @@ const Dashboard = () => {
         }
     }
 
-    const nouvelEmploye = async (e) => {
-        e.preventDefault()
-        try {
-            await NouveauUtilisateur(utilisateur)
-            navigate(`/verificationEmail`)
-            setUtilisateur({
-                nom: "",
-                prenom: "",
-                email: "",
-                motdepasse: "",
-                contact: "",
-                type: "",
-                niveau: "",
-                service: ""
-            })
-            setState(false)
-        } catch (error) {
-            toast.error(error.message || "Erreur lors de la création")
-        }
+   const nouvelEmploye = async (e) => {
+  e.preventDefault()
+  try {
+    // S'assurer que le service correspond au niveau
+    const utilisateurFinal = { ...utilisateur };
+    
+    // Si pour une raison quelconque le service n'est pas défini, le définir
+    if (utilisateurFinal.niveau && !utilisateurFinal.service) {
+      switch(utilisateurFinal.niveau) {
+        case "1":
+          utilisateurFinal.service = "Salle Multimédia";
+          break;
+        case "2":
+          utilisateurFinal.service = "Bibliothèque Adulte";
+          break;
+        case "3":
+          utilisateurFinal.service = "Salle Convivialité";
+          break;
+      }
     }
+    
+    // Ajouter le type par défaut s'il n'est pas défini
+    if (!utilisateurFinal.type) {
+      utilisateurFinal.type = "employé";
+    }
+    
+    // Envoyer les données
+    await NouveauUtilisateur(utilisateurFinal);
+    
+    // Redirection et réinitialisation
+    setUtilisateur({
+      nom: "",
+      prenom: "",
+      email: "",
+      motdepasse: "",
+      contact: "",
+      type: "employé",
+      niveau: "",
+      service: ""
+    });
+    setState(false);
+    window.location.reload();
+  } catch (error) {
+    toast.error(error.message || "Erreur lors de la création");
+  }
+}
 
     const activer = async (id) => {
         try {
@@ -398,7 +525,7 @@ const Dashboard = () => {
                                                                 className="text-orange-500 hover:text-orange-700 transition-colors p-1"
                                                                 title="Changer niveau"
                                                             >
-                                                                <FaExpeditedssl className="text-lg" />
+                                                                <FaExpeditedssl className="text-2xl" />
                                                             </button>
                                                             {emp.actif ? (
                                                                 <button
@@ -406,7 +533,7 @@ const Dashboard = () => {
                                                                     className="text-red-500 hover:text-red-700 transition-colors p-1"
                                                                     title="Désactiver"
                                                                 >
-                                                                    <CiLock className="text-lg" />
+                                                                    <CiLock className="text-2xl" />
                                                                 </button>
                                                             ) : (
                                                                 <button
@@ -414,9 +541,16 @@ const Dashboard = () => {
                                                                     className="text-green-500 hover:text-green-700 transition-colors p-1"
                                                                     title="Réactiver"
                                                                 >
-                                                                    <CiUnlock className="text-lg" />
+                                                                    <CiUnlock className="text-2xl" />
                                                                 </button>
                                                             )}
+                                                            <button 
+                                                            onClick={()=>confirmDeleteUser(emp._id)}
+                                                            className="text-red-500 hover:text-red-700 transition-colors p-1" >
+                                                            <FaTrash className='text-2xl'/>
+
+                                                            </button>
+                                                        
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -504,6 +638,37 @@ const Dashboard = () => {
                 </div>
             </div>
 
+            {
+                showDeleteModal && (
+                    <div className='fixed  bg-black/50 inset-0 w-full flex items-center justify-center min-h-screen'>
+                <div className='z-50 bg-white p-8 rounded-2xl'>
+                    <div className='flex items-center justify-center'>
+                        <FaTrash className='text-xl text-red-500 '/>
+                        <h1 className='font-bold text-lg ml-2 text-black/50'>Supprimer un utilisateur</h1>
+                    </div>
+                    <div className='my-4 w-100 text-center'>
+                        <p>
+                            Cette action est irréversible. Êtes-vous sûr de vouloir supprimer cet utilisateur ?
+                        </p>
+                    </div>
+                    <div className='flex items-center justify-center gap-4'>
+                        <button
+                        onClick={()=>cancelDelete()}
+                        
+                        className='px-4 py-2 bg-gray-200 text-black/75 cursor-pointer duration-500 transition-all rounded-xl '>
+                        Annuler
+                        </button>
+                        <button
+                        onClick={()=>handleDeleteUser()}
+                        className='px-4 py-2 bg-red-500 text-white cursor-pointer duration-500 transition-all rounded-xl '>
+                        Confirmer
+                        </button>
+                    </div>
+                </div>
+            </div>
+                )
+            }
+
             {/* Modal Nouvel employé */}
             {state && (
                 <>
@@ -529,185 +694,223 @@ const Dashboard = () => {
                                 </div>
 
                                 <form className="w-full" onSubmit={nouvelEmploye}>
-                                    <div className="mb-6">
-                                        <h1 className="text-center font-bold text-xl sm:text-2xl md:text-3xl text-gray-800">
-                                            Nouvel employé
-                                        </h1>
-                                        <p className="text-center text-gray-600 mt-2">
-                                            Remplissez les informations de l'employé
-                                        </p>
-                                    </div>
-                                    
-                                    <div className="w-full p-3 sm:p-5 flex items-center justify-center text-4xl sm:text-5xl text-blue-500">
-                                        <FaRegUserCircle />
-                                    </div>
+  <div className="mb-6">
+    <h1 className="text-center font-bold text-xl sm:text-2xl md:text-3xl text-gray-800">
+      Nouvel employé
+    </h1>
+    <p className="text-center text-gray-600 mt-2">
+      Remplissez les informations de l'employé
+    </p>
+  </div>
+  
+  <div className="w-full p-3 sm:p-5 flex items-center justify-center text-4xl sm:text-5xl text-blue-500">
+    <FaRegUserCircle />
+  </div>
 
-                                    {/* Nom et Prénom */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div className="space-y-2">
-                                            <label htmlFor="nom" className="block text-sm font-medium text-gray-700">
-                                                Nom <span className="text-red-500">*</span>
-                                            </label>
-                                            <input 
-                                                type="text" 
-                                                id="nom" 
-                                                name="nom" 
-                                                value={utilisateur.nom}
-                                                onChange={e=>setUtilisateur({...utilisateur,nom:e.target.value})}
-                                                placeholder="Entrez le nom"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
-                                                required
-                                            />
-                                        </div>
-                                        
-                                        <div className="space-y-2">
-                                            <label htmlFor="prenom" className="block text-sm font-medium text-gray-700">
-                                                Prénom <span className="text-red-500">*</span>
-                                            </label>
-                                            <input 
-                                                type="text" 
-                                                id="prenom" 
-                                                name="prenom" 
-                                                value={utilisateur.prenom}
-                                                onChange={e=>setUtilisateur({...utilisateur,prenom:e.target.value})}
-                                                placeholder="Entrez le prénom"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
-                                                required
-                                            />
-                                        </div>
-                                    </div>
+  {/* Nom et Prénom */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div className="space-y-2">
+      <label htmlFor="nom" className="block text-sm font-medium text-gray-700">
+        Nom <span className="text-red-500">*</span>
+      </label>
+      <input 
+        type="text" 
+        id="nom" 
+        name="nom" 
+        value={utilisateur.nom}
+        onChange={e => setUtilisateur({...utilisateur, nom: e.target.value})}
+        placeholder="Entrez le nom"
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
+        required
+      />
+    </div>
+    
+    <div className="space-y-2">
+      <label htmlFor="prenom" className="block text-sm font-medium text-gray-700">
+        Prénom <span className="text-red-500">*</span>
+      </label>
+      <input 
+        type="text" 
+        id="prenom" 
+        name="prenom" 
+        value={utilisateur.prenom}
+        onChange={e => setUtilisateur({...utilisateur, prenom: e.target.value})}
+        placeholder="Entrez le prénom"
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
+        required
+      />
+    </div>
+  </div>
 
-                                    {/* Email et Contact */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div className="space-y-2">
-                                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                                Email <span className="text-red-500">*</span>
-                                            </label>
-                                            <input 
-                                                type="email" 
-                                                id="email" 
-                                                name="email" 
-                                                value={utilisateur.email}
-                                                onChange={e=>setUtilisateur({...utilisateur,email:e.target.value})}
-                                                placeholder="exemple@email.com"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
-                                                required
-                                            />
-                                        </div>
-                                        
-                                        <div className="space-y-2">
-                                            <label htmlFor="contact" className="block text-sm font-medium text-gray-700">
-                                                Contact <span className="text-red-500">*</span>
-                                            </label>
-                                            <input 
-                                                type="tel" 
-                                                id="contact" 
-                                                name="contact" 
-                                                value={utilisateur.contact}
-                                                onChange={e=>setUtilisateur({...utilisateur,contact:e.target.value})}
-                                                placeholder="+225 XX XX XX XX XX"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
-                                                required
-                                            />
-                                        </div>
-                                    </div>
+  {/* Email et Contact */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div className="space-y-2">
+      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        Email <span className="text-red-500">*</span>
+      </label>
+      <input 
+        type="email" 
+        id="email" 
+        name="email" 
+        value={utilisateur.email}
+        onChange={e => setUtilisateur({...utilisateur, email: e.target.value})}
+        placeholder="exemple@email.com"
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
+        required
+      />
+    </div>
+    
+    <div className="space-y-2">
+      <label htmlFor="contact" className="block text-sm font-medium text-gray-700">
+        Contact <span className="text-red-500">*</span>
+      </label>
+      <input 
+        type="tel" 
+        id="contact" 
+        name="contact" 
+        value={utilisateur.contact}
+        onChange={e => setUtilisateur({...utilisateur, contact: e.target.value})}
+        placeholder="+225 XX XX XX XX XX"
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
+        required
+      />
+    </div>
+  </div>
 
-                                    {/* Niveau, Service et Type */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                        <div className="space-y-2">
-                                            <label htmlFor="niveau" className="block text-sm font-medium text-gray-700">
-                                                Niveau <span className="text-red-500">*</span>
-                                            </label>
-                                            <select 
-                                                id="niveau" 
-                                                name="niveau"
-                                                value={utilisateur.niveau}
-                                                onChange={e=>setUtilisateur({...utilisateur,niveau:e.target.value})}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                                                required
-                                            >
-                                                <option value="">Sélectionnez</option>
-                                                <option value="1">Niveau 1</option>
-                                                <option value="2">Niveau 2</option>
-                                                <option value="3">Niveau 3</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div className="space-y-2">
-                                            <label htmlFor="service" className="block text-sm font-medium text-gray-700">
-                                                Service <span className="text-red-500">*</span>
-                                            </label>
-                                            <select 
-                                                id="service" 
-                                                name="service"
-                                                value={utilisateur.service}
-                                                onChange={e=>setUtilisateur({...utilisateur,service:e.target.value})}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                                                required
-                                            >
-                                                <option value="">Sélectionnez</option>
-                                                <option value="Salle Multimedia">Salle Multimédia</option>
-                                                <option value="Bibliothèque Adulte">Bibliothèque Adulte</option>
-                                                <option value="Salle Convivialite">Salle convivialité</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div className="space-y-2">
-                                            <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-                                                Type <span className="text-red-500">*</span>
-                                            </label>
-                                            <select 
-                                                id="type" 
-                                                name="type"
-                                                value={utilisateur.type}
-                                                onChange={e=>setUtilisateur({...utilisateur,type:e.target.value})}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                                                required
-                                            >
-                                                <option value="">Sélectionnez</option>
-                                                <option value="employé">Employé</option>
-                                            </select>
-                                        </div>
-                                    </div>
+  {/* Niveau et Service */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div className="space-y-2">
+      <label htmlFor="niveau" className="block text-sm font-medium text-gray-700">
+        Niveau <span className="text-red-500">*</span>
+      </label>
+      <select 
+        id="niveau" 
+        name="niveau"
+        value={utilisateur.niveau}
+        onChange={(e) => {
+          const selectedNiveau = e.target.value;
+          setUtilisateur(prev => {
+            // Définir le service automatiquement en fonction du niveau
+            let service = "";
+            if (selectedNiveau === "1") service = "Salle Multimédia";
+            else if (selectedNiveau === "2") service = "Bibliothèque Adulte";
+            else if (selectedNiveau === "3") service = "Salle Convivialité";
+            
+            return {
+              ...prev,
+              niveau: selectedNiveau,
+              service: service
+            };
+          });
+        }}
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+        required
+      >
+        <option value="">Sélectionnez un niveau</option>
+        <option value="1">Niveau 1 - Salle Multimédia</option>
+        <option value="2">Niveau 2 - Bibliothèque Adulte</option>
+        <option value="3">Niveau 3 - Salle Convivialité</option>
+      </select>
+    </div>
+    
+    <div className="space-y-2">
+      <label htmlFor="service" className="block text-sm font-medium text-gray-700">
+        Service <span className="text-red-500">*</span>
+      </label>
+      <input 
+        type="text" 
+        id="service" 
+        name="service" 
+        value={utilisateur.service}
+        readOnly
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-gray-50 cursor-not-allowed"
+        placeholder="Sélectionnez d'abord le niveau"
+      />
+      <p className="text-xs text-gray-500 mt-1">
+        Service défini automatiquement selon le niveau
+      </p>
+    </div>
+  </div>
 
-                                    {/* Mot de passe */}
-                                    <div className="space-y-2 mb-6">
-                                        <label htmlFor="motdepasse" className="block text-sm font-medium text-gray-700">
-                                            Mot de passe <span className="text-red-500">*</span>
-                                        </label>
-                                        <input 
-                                            type="password" 
-                                            id="motdepasse" 
-                                            name="motdepasse" 
-                                            value={utilisateur.motdepasse}
-                                            onChange={e=>setUtilisateur({...utilisateur,motdepasse:e.target.value})}
-                                            minLength={8}
-                                            placeholder="Entrez le mot de passe"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
-                                            required
-                                        />
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            Le mot de passe doit contenir au moins 8 caractères
-                                        </p>
-                                    </div>
+  {/* Type (toujours Employé) */}
+  <div className="mb-6">
+    <div className="space-y-2">
+      <label htmlFor="type" className="block text-sm font-medium text-gray-700">
+        Type <span className="text-red-500">*</span>
+      </label>
+      <select 
+        id="type" 
+        name="type"
+        value={utilisateur.type}
+        onChange={e => setUtilisateur({...utilisateur, type: e.target.value})}
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+        required
+      >
+        <option value="">Sélectionnez</option>
+        <option value="employé">Employé</option>
+      </select>
+    </div>
+  </div>
 
-                                    {/* Boutons */}
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <button 
-                                            type="submit" 
-                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all hover:scale-[0.98]"
-                                        >
-                                            Enregistrer l'employé
-                                        </button>
-                                        <button 
-                                            type="button"
-                                            onClick={handleState}
-                                            className="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 px-6 rounded-lg transition-all"
-                                        >
-                                            Annuler
-                                        </button>
-                                    </div>
-                                </form>
+  {/* Mot de passe */}
+  <div className="space-y-2 mb-6 relative">
+    <label htmlFor="motdepasse" className="block text-sm font-medium text-gray-700">
+      Mot de passe <span className="text-red-500">*</span>
+    </label>
+    <input 
+      type={type} 
+      id="motdepasse" 
+      name="motdepasse" 
+      value={utilisateur.motdepasse}
+      onChange={e => setUtilisateur({...utilisateur, motdepasse: e.target.value})}
+      minLength={8}
+      placeholder="Entrez le mot de passe"
+      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
+      required
+    />
+    <p className="text-sm text-gray-500 mt-1">
+      Le mot de passe doit contenir au moins 8 caractères
+    </p>
+    <div className='absolute z-50  top-10 right-15  rounded-full'>
+{
+    eye ? (
+        <button
+        onClick={()=>handleType()}
+        >
+            <FaEyeSlash className='text-2xl text-gray-500'/>
+        </button>
+    ):(
+        <button
+        onClick={()=>handleType()}
+        >
+            <FaEye className='text-2xl text-gray-500'/>
+        </button>
+    )
+}
+
+        
+        
+    </div>
+  </div>
+
+  {/* Boutons */}
+  <div className="flex flex-col sm:flex-row gap-3">
+    <button 
+      type="submit" 
+      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all hover:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled={!utilisateur.niveau || !utilisateur.service}
+    >
+      Enregistrer l'employé
+    </button>
+    <button 
+      type="button"
+      onClick={handleState}
+      className="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 px-6 rounded-lg transition-all"
+    >
+      Annuler
+    </button>
+  </div>
+</form>
                             </div>
                         </div>
                     </div>

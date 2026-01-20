@@ -15,7 +15,7 @@ try {
 
         const info = await transporter.sendMail({
             from: process.env.EMAIL,
-            to: process.env.EMAIL, // Normalement ce serait l'email du destinataire
+            to: email, // Normalement ce serait l'email du destinataire
             subject: "Vérification de l'email",
             text: `Message reçu de: ${email} `,
             html: mailjs(email,verificationJeton), // ← CORRIGÉ ICI
@@ -41,7 +41,7 @@ const emailValide = async (email)=>{
 
         const info = await transporter.sendMail({
             from: process.env.EMAIL,
-            to: process.env.EMAIL, // Normalement ce serait l'email du destinataire
+            to: email, // Normalement ce serait l'email du destinataire
             subject: "Email vérifié",
             text: `Message reçu de: ${email} `,
             html: mailVerifier(email), // ← CORRIGÉ ICI
@@ -67,7 +67,7 @@ const oublierMotdepasse = async (email,lienReinitialisation)=>{
 
         const info = await transporter.sendMail({
             from: process.env.EMAIL,
-            to: process.env.EMAIL, // Normalement ce serait l'email du destinataire
+            to: email, // Normalement ce serait l'email du destinataire
             subject: "Email vérifié",
             text: `Message reçu de: ${email} `,
             html: Reinitialisation(email,lienReinitialisation   ), // ← CORRIGÉ ICI
@@ -93,7 +93,7 @@ const motdepasseChanger = async (email)=>{
 
         const info = await transporter.sendMail({
             from: process.env.EMAIL,
-            to: process.env.EMAIL, // Normalement ce serait l'email du destinataire
+            to: email, // Normalement ce serait l'email du destinataire
             subject: "Email vérifié",
             text: `Message reçu de: ${email} `,
             html: MotdepasseReinitialiser(email   ), // ← CORRIGÉ ICI
@@ -118,7 +118,7 @@ const EnvoyerDemande = async (email)=>{
 
         const info = await transporter.sendMail({
             from: process.env.EMAIL,
-            to: process.env.EMAIL, // Normalement ce serait l'email du destinataire
+            to: email, // Normalement ce serait l'email du destinataire
             subject: "Demande de livre",
             text: `Message reçu de: ${email} `,
             html: TemplateDemandeLivre(email), // ← CORRIGÉ ICI

@@ -9,7 +9,8 @@ const verificationJeton = async (req, res, next) => {
       return res.status(401).json({ message: "Cookies non présents. Assurez-vous que cookie-parser est utilisé." });
     }
 
-    const token = req.cookies.token;
+    const token =
+  req.cookies.token_admin || req.cookies.token_employe;
     if (!token) {
       return res.status(401).json({ message: "Non autorisé : token manquant." });
     }

@@ -58,7 +58,6 @@ export const NouveauUtilisateur = async (utilisateur)=>{
         const res = await axios.post(`${AXIOS_URI}/utilisateur/api/auth/inscription`,utilisateur)
         if(res.data.status==="valide"){
             toast.success(res.data.message)
-        
         }
     } catch (error) {
         toast.error(error.response.data.message)
@@ -124,6 +123,17 @@ export const  AfficherClient = async ()=>{
 export const ModifierInfoEmploye = async (id,data)=>{
     try {
         const res = await axios.patch(`${AXIOS_URI}/utilisateur/api/auth/MajEmploye/${id}`,data)
+        if(res.data.status==="valide"){
+            toast.success(res.data.message) 
+        }
+    } catch (error) {
+        toast.error(error.response.data.message)
+    }
+}
+
+export const SupprimerUtilisateur = async (id)=>{
+    try {
+        const res = await axios.delete(`${AXIOS_URI}/utilisateur/api/auth/supprimerUtilisateur/${id}`)
         if(res.data.status==="valide"){
             toast.success(res.data.message) 
         }
