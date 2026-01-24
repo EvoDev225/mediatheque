@@ -37,7 +37,6 @@ const Convivialite = () => {
     // États pour le formulaire
     const [client, setClient] = useState({
         date: "",
-        numero: "",
         nom: '',
         prenom: '',
         email: "",
@@ -165,7 +164,6 @@ const Convivialite = () => {
         setSalle("");
         setClient({
             date: "",
-            numero: "",
             nom: '',
             prenom: '',
             email: "",
@@ -1006,19 +1004,7 @@ const Convivialite = () => {
                                                 required
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Numéro *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={client.numero}
-                                                onChange={e => setClient({ ...client, numero: e.target.value })}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                                                placeholder="Numéro"
-                                                required
-                                            />
-                                        </div>
+                                        
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 Nom *

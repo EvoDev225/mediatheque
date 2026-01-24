@@ -12,6 +12,7 @@ const routerClient = require("./routes/routeClient")
 const routerEspace = require("./routes/routeEspace")
 const routerLivre = require("./routes/routeLivre")
 const routerDemande = require("./routes/routeDemande")
+const routerChildren = require("./routes/routeChildren")
 dotenv.config()
 app.use(helmet())
 app.use(express.json())
@@ -26,6 +27,7 @@ app.use('/client',routerClient)
 app.use('/espace',routerEspace)
 app.use('/livre',routerLivre)
 app.use('/demandes',routerDemande)
+app.use('/children',routerChildren)
 
 
 

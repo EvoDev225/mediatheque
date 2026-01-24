@@ -14,12 +14,13 @@ const creerLivre = async (req, res) => {
             quantite, 
             dateEnregistrement, 
             status, 
-            categorie 
+            categorie,
+            type
         } = req.body;
 
         // Vérifier si tous les champs requis sont présents
         if (!code || !numero || !titre || !auteur || !lieuEdition || !dateEdition || 
-            !origine || !quantite || !dateEnregistrement || !status || !categorie) {
+            !origine || !quantite || !dateEnregistrement || !status || !categorie || !type) {
             return res.status(400).json({ 
                 message: "Tous les champs sont obligatoires" 
             });
@@ -46,7 +47,8 @@ const creerLivre = async (req, res) => {
             quantite,
             dateEnregistrement,
             status,
-            categorie
+            categorie,
+            type
         });
 
         await nouveauLivre.save();
@@ -238,7 +240,8 @@ const modifierLivre = async (req, res) => {
             quantite, 
             dateEnregistrement, 
             status, 
-            categorie 
+            categorie,
+            type
         } = req.body;
 
         // Vérifier si le livre existe
@@ -250,7 +253,7 @@ const modifierLivre = async (req, res) => {
         }
 
         // Si le code est modifié, vérifier qu'il n'existe pas déjà
-        if (code && code !== livre.code) {
+        if (code && code !== livre.code){
             const codeExiste = await Livre.findOne({ code });
             if (codeExiste) {
                 return res.status(409).json({ 
@@ -273,7 +276,8 @@ const modifierLivre = async (req, res) => {
                 quantite, 
                 dateEnregistrement, 
                 status, 
-                categorie 
+                categorie,
+                type
             },
             { new: true }
         );

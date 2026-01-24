@@ -17,6 +17,7 @@ import Livre from "./components/Livre/Livre"
 import Bibliotheque from "./components/Dashboard/Bibliotheque"
 import Books from "./components/Dashboard/Books"
 import MentionsLegales from "./components/Mentions/MentionsLegales"
+import Enfant from "./components/Dashboard/enfant"
 function App() {
 axios.defaults.baseURL = 'http://localhost:3000'
 axios.defaults.withCredentials = true
@@ -41,6 +42,7 @@ axios.defaults.withCredentials = true
             <Route path="/bibliotheque" element={<Bibliotheque/>} ></Route>
             <Route path="/mentions" element={<MentionsLegales/>} ></Route>
             <Route path="/book" element={<Books/>} ></Route>
+            <Route path="/enfant" element={<Enfant/>} ></Route>
         </Routes>
       </BrowserRouter>
     </>

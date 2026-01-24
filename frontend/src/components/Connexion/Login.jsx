@@ -192,12 +192,14 @@ const Login = () => {
                                             {
                                                 eye ? (
                                                     <button
+                                                    type="button"
                                                     onClick={()=>handleType()}
                                                     >
                                                         <FaEyeSlash className='text-2xl text-gray-500'/>
                                                     </button>
                                                 ):(
                                                     <button
+                                                    type="button"
                                                     onClick={()=>handleType()}
                                                     >
                                                         <FaEye className='text-2xl text-gray-500'/>
@@ -215,7 +217,7 @@ const Login = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="w-full bg-linear-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                                        className="w-full my-8 bg-linear-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                                     >
                                         {loading ? (
                                             <span className="flex items-center justify-center">

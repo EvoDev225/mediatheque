@@ -1,6 +1,7 @@
 import salle from "../../../assets/img/salle.jpg"
 import bb from "../../../assets/img/bibliothèque.jpg"
 import fete from "../../../assets/img/fete.jpg"
+import enfant from "../../../assets/img/enfant.jpg"
 export const Espace = 
     [
         {
@@ -21,4 +22,10 @@ export const Espace =
             niveau:3,
             lien:"convivialite"
         },
+        {
+            img:enfant,
+            titre:"Bibliothèque enfant",
+            niveau:4,
+            lien:"enfant"
+        }
     ]

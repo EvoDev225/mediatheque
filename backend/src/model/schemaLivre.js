@@ -11,7 +11,8 @@ const schemaLivre = new mongoose.Schema({
     quantite:{type:String,required:true},
     dateEnregistrement:{type:Date,required:true},
     status:{type:String,required:true},
-    categorie:{type:String,required:true}
+    categorie:{type:String,required:true},
+    type:{type:String,required:true}
 },{timestamps:true})
 
 const Livre = mongoose.model("livre",schemaLivre)

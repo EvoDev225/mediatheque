@@ -1,75 +1,71 @@
-import { 
-  FaBook, 
-  FaFilter, 
-  FaPlus, 
-  FaSearch, 
-  FaUsers, 
-  FaChartLine, 
-  FaCalendarAlt, 
-  FaTag, 
-  FaEdit, 
-  FaTrash, 
-  FaEye, 
-  FaDownload, 
-  FaSort, 
-  FaSortUp, 
-  FaSortDown,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaRegCalendarAlt,
-  FaRegClock,
-  FaRegBookmark,
-  FaRegUser,
-  FaRegEnvelope,
-  FaRegFileAlt,
-  FaRegChartBar,
-  FaRegStar,
-  FaRegTimesCircle,
-  FaRegCheckCircle,
-  FaSpinner,
-  FaMonument,
-  FaPhone,
-  FaUserTie,
-  FaUserCheck
+import {
+    FaBook,
+    FaFilter,
+    FaPlus,
+    FaSearch,
+    FaUsers,
+    FaChartLine,
+    FaCalendarAlt,
+    FaTag,
+    FaEdit,
+    FaTrash,
+    FaEye,
+    FaDownload,
+    FaSort,
+    FaSortUp,
+    FaSortDown,
+    FaCheckCircle,
+    FaTimesCircle,
+    FaRegCalendarAlt,
+    FaRegClock,
+    FaRegBookmark,
+    FaRegUser,
+    FaRegEnvelope,
+    FaRegFileAlt,
+    FaRegChartBar,
+    FaRegStar,
+    FaRegTimesCircle,
+    FaRegCheckCircle,
+    FaSpinner,
+    FaMonument,
+    FaPhone,
+    FaUserTie,
+    FaUserCheck
 } from 'react-icons/fa'
-import { 
-  FaGear, 
-  FaX, 
-  FaArrowRight,
-  FaArrowLeft,
-  FaBookOpen,
-  FaLayerGroup
+import {
+    FaGear,
+    FaX,
+    FaArrowRight,
+    FaArrowLeft,
+    FaBookOpen,
+    FaLayerGroup
 } from 'react-icons/fa6'
-import { 
-  MdOutlineDashboard,
-  MdOutlinePendingActions,
-  MdOutlineAdd,
-  MdOutlineSearch,
-  MdOutlineFilterList,
-  MdOutlineSort,
-  MdOutlineMoreVert,
-  MdOutlineLibraryBooks,
-  MdOutlineCollectionsBookmark,
-  MdOutlinePersonAdd,
-  MdOutlineGroups
+import {
+    MdOutlineDashboard,
+    MdOutlinePendingActions,
+    MdOutlineAdd,
+    MdOutlineSearch,
+    MdOutlineFilterList,
+    MdOutlineSort,
+    MdOutlineMoreVert,
+    MdOutlineLibraryBooks,
+    MdOutlineCollectionsBookmark,
+    MdOutlinePersonAdd,
+    MdOutlineGroups
 } from "react-icons/md"
-import { 
-  IoMdAdd,
-  IoMdSearch,
-  IoMdFunnel,
-  IoMdStats,
-  IoMdBook,
-  IoMdPerson
+import {
+    IoMdAdd,
+    IoMdSearch,
+    IoMdFunnel,
+    IoMdStats,
+    IoMdBook,
+    IoMdPerson
 } from "react-icons/io"
-import { 
-  HiOutlineCollection,
-  HiOutlineBookOpen,
-  HiOutlineUserGroup
-} from "react-icons/hi"
+import { HiOutlineCollection, HiOutlineBookOpen, HiOutlineUserGroup } from "react-icons/hi"
 import NavBarDash from './NavBarDash'
 import { useEffect, useState } from 'react'
 import { AfficherDemande, InsererLivre, ModifierLivre, SupprimerLivre, ToutLivre } from '../../Fonctions/Livre/Flivre'
-import { InsererClient, SupprimerClient } from '../../Fonctions/Espace/Visite'  
+import { InsererClient } from '../../Fonctions/Espace/Visite'
 import toast from 'react-hot-toast'
 import { AfficherClient } from '../../Fonctions/Utilisateur/Utilisateur'
 
@@ -98,11 +94,10 @@ const Bibliotheque = () => {
     const [editingBook, setEditingBook] = useState(null)
     const [isEditMode, setIsEditMode] = useState(false)
     const [deleted, setDeleted] = useState(false)
-    const [clientDeleted, setClientDeleted] = useState(false)
     const [bookToDelete, setBookToDelete] = useState(null)
-    const [clientToDelete, setClientToDelete] = useState(null)
     const [allDemand, setAllDemande] = useState([])
-    
+    const [date,setDate]=useState("")
+
     // État initial du livre
     const [book, setBook] = useState({
         code: "",
@@ -117,12 +112,12 @@ const Bibliotheque = () => {
         dateEnregistrement: new Date().toISOString().split('T')[0],
         status: "Disponible",
         categorie: "",
+        type:'Adulte'
     })
-    
+
     // État initial du client
     const [client, setClient] = useState({
-        date: "",
-        numero: "",
+        date: date,
         nom: "",
         prenom: "",
         email: "",
@@ -141,8 +136,8 @@ const Bibliotheque = () => {
                 ])
                 setAllBooks(booksRes)
                 // Filtrer uniquement les clients de la bibliothèque
-                const bibliothequeClients = (clientsRes || []).filter(client => 
-                    client.visite && client.visite.toLowerCase() === 'bibliothèque'
+                const bibliothequeClients = (clientsRes || []).filter(client =>
+                    client.visite && client.visite.toLowerCase().includes('bibliothèque')
                 )
                 setAllClients(bibliothequeClients)
             } catch (error) {
@@ -153,67 +148,38 @@ const Bibliotheque = () => {
         fetchData()
     }, [])
 
+    // Insérer les clients
+        const formatDate = (dateIso)=>{
+            const [year,month,day]=dateIso.split('-')
+            return `${day}/${month}/${year}`
+        }
+    // Insérer les clients
+        
     // Gestion des livres - Suppression
     const OpenDelete = (id) => {
         setBookToDelete(id)
         setDeleted(true)
     }
-    
+
     const CloseDelete = () => {
         setDeleted(false)
         setBookToDelete(null)
     }
-    
+
     const handleDelete = async () => {
         try {
             if (!bookToDelete) {
                 toast.error("Aucun livre sélectionné pour la suppression")
                 return
             }
-            
+
             const res = await SupprimerLivre(bookToDelete)
-            
+
             if (res) {
                 const updatedBooks = await ToutLivre()
                 setAllBooks(updatedBooks)
                 CloseDelete()
                 toast.success("Livre supprimé avec succès!")
-            }
-        } catch (error) {
-            console.log(error)
-            toast.error(error.message || "Erreur lors de la suppression")
-        }
-    }
-
-    // Gestion des clients - Suppression
-    const OpenClientDelete = (id) => {
-        setClientToDelete(id)
-        setClientDeleted(true)
-    }
-    
-    const CloseClientDelete = () => {
-        setClientDeleted(false)
-        setClientToDelete(null)
-    }
-    
-    const handleClientDelete = async () => {
-        try {
-            if (!clientToDelete) {
-                toast.error("Aucun client sélectionné pour la suppression")
-                return
-            }
-            
-            const res = await SupprimerClient(clientToDelete)
-            
-            if (res) {
-                const updatedClients = await AfficherClient()
-                // Filtrer uniquement les clients de la bibliothèque après suppression
-                const bibliothequeClients = (updatedClients || []).filter(client => 
-                    client.visite && client.visite.toLowerCase() === 'bibliothèque'
-                )
-                setAllClients(bibliothequeClients)
-                CloseClientDelete()
-                toast.success("Client supprimé avec succès!")
             }
         } catch (error) {
             console.log(error)
@@ -238,16 +204,16 @@ const Bibliotheque = () => {
                 status: book.status || "Disponible",
                 categorie: book.categorie || "",
             });
-            
+
             if (book.img) {
                 setImagePreview(book.img);
                 setImageUrl(book.img);
             }
-            
+
             setEditingBook(book._id);
             setIsEditMode(true);
             setModal(true);
-            
+
         } catch (error) {
             console.log(error);
             toast.error("Erreur lors du chargement du livre");
@@ -273,18 +239,18 @@ const Bibliotheque = () => {
         const handleDemand = async () => {
             try {
                 const res = await AfficherDemande()
-                if(res){
+                if (res) {
                     setAllDemande(res)
                 }
             } catch (error) {
                 console.log(error)
             }
         }
-        
+
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
         };
-        
+
         window.addEventListener('resize', handleResize);
         handleDemand()
         return () => window.removeEventListener('resize', handleResize);
@@ -305,14 +271,14 @@ const Bibliotheque = () => {
             }
 
             setSelectedFile(file);
-            
+
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result);
                 setBook(prev => ({ ...prev, img: reader.result }));
             };
             reader.readAsDataURL(file);
-            
+
             setImageUrl('');
         }
     };
@@ -321,7 +287,7 @@ const Bibliotheque = () => {
     const handleImageUrlChange = (e) => {
         const url = e.target.value;
         setImageUrl(url);
-        
+
         if (url) {
             setSelectedFile(null);
             setImagePreview(url);
@@ -332,7 +298,7 @@ const Bibliotheque = () => {
     // Gestion du changement des champs du formulaire livre
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        
+
         if (name === 'dateEnregistrement' || name === 'dateEdition') {
             setBook(prev => ({ ...prev, [name]: value }));
         } else {
@@ -343,35 +309,7 @@ const Bibliotheque = () => {
     // Gestion du changement des champs du formulaire client
     const handleClientInputChange = (e) => {
         const { name, value } = e.target;
-        
-        // Validation pour le champ date (format jj/mm/aaaa)
-        if (name === 'date') {
-            // Permettre uniquement les chiffres et les slash
-            const formattedValue = value.replace(/[^0-9/]/g, '');
-            
-            // Auto-formater en jj/mm/aaaa
-            let formatted = formattedValue;
-            if (formatted.length === 2 && !formatted.includes('/')) {
-                formatted = formatted + '/';
-            } else if (formatted.length === 5 && formatted.split('/')[1]?.length === 2) {
-                formatted = formatted + '/';
-            }
-            
-            // Limiter à 10 caractères (jj/mm/aaaa)
-            if (formatted.length <= 10) {
-                setClient(prev => ({ ...prev, [name]: formatted }));
-            }
-        } else if (name === 'numero') {
-            // Numéro : uniquement des chiffres
-            const formattedValue = value.replace(/[^0-9]/g, '');
-            setClient(prev => ({ ...prev, [name]: formattedValue }));
-        } else if (name === 'contact') {
-            // Contact : format téléphone
-            const formattedValue = value.replace(/[^0-9+]/g, '');
-            setClient(prev => ({ ...prev, [name]: formattedValue }));
-        } else {
-            setClient(prev => ({ ...prev, [name]: value }));
-        }
+        setClient(prev => ({ ...prev, [name]: value }));
     }
 
     const handleOpen = () => {
@@ -396,6 +334,7 @@ const Bibliotheque = () => {
             dateEnregistrement: new Date().toISOString().split('T')[0],
             status: "Disponible",
             categorie: "",
+            type:"Adulte"
         });
         setImagePreview(null);
         setImageUrl('');
@@ -408,7 +347,6 @@ const Bibliotheque = () => {
     const resetClientForm = () => {
         setClient({
             date: "",
-            numero: "",
             nom: "",
             prenom: "",
             email: "",
@@ -426,7 +364,7 @@ const Bibliotheque = () => {
         try {
             const requiredFields = ['code', 'numero', 'titre', 'auteur', 'categorie', 'status'];
             const missingFields = requiredFields.filter(field => !book[field]);
-            
+
             if (missingFields.length > 0) {
                 toast.error(`Veuillez remplir les champs requis: ${missingFields.join(', ')}`);
                 setIsLoading(false);
@@ -440,7 +378,7 @@ const Bibliotheque = () => {
             };
 
             let res;
-            
+
             if (isEditMode && editingBook) {
                 res = await ModifierLivre(editingBook, bookData);
                 if (res) {
@@ -462,7 +400,7 @@ const Bibliotheque = () => {
                 setModal(false);
                 resetForm();
             }
-            
+
         } catch (error) {
             console.error('Erreur:', error);
             toast.error(error.message || 'Erreur lors de l\'opération');
@@ -478,71 +416,55 @@ const Bibliotheque = () => {
 
         try {
             // Validation des champs requis
-            const requiredFields = ['date', 'numero', 'nom', 'prenom', 'contact', 'visite', 'profession'];
+            const requiredFields = ['date', 'nom', 'email', 'prenom', 'contact', 'visite', 'profession'];
             const missingFields = requiredFields.filter(field => !client[field]);
-            
+
             if (missingFields.length > 0) {
                 toast.error(`Veuillez remplir les champs requis: ${missingFields.join(', ')}`);
                 setIsClientLoading(false);
                 return;
             }
 
-            // Validation du format de date
-            const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
-            if (!dateRegex.test(client.date)) {
-                toast.error('Le format de date doit être jj/mm/aaaa');
-                setIsClientLoading(false);
-                return;
-            }
-
-            // Validation du numéro
-            if (isNaN(client.numero) || client.numero === '') {
-                toast.error('Le numéro doit être un nombre');
-                setIsClientLoading(false);
-                return;
-            }
-
+            // Préparer les données pour l'API
             const clientData = {
-                ...client,
-                numero: parseInt(client.numero)
+                nom: client.nom.trim(),
+                prenom: client.prenom.trim(),
+                email: client.email?.trim() || '',
+                contact: client.contact.trim(),
+                visite: client.visite,
+                profession: client.profession.trim(),
+                date: formatDate(client.date) // Date brute, pas de conversion
             };
 
+            console.log('Données envoyées:', clientData); // Pour débogage
+
             const res = await InsererClient(clientData);
-            
+
             if (res) {
+                toast.success('Visiteur enregistré avec succès!');
+
+                // Recharger les clients
                 const updatedClients = await AfficherClient();
                 // Filtrer uniquement les clients de la bibliothèque après insertion
-                const bibliothequeClients = (updatedClients || []).filter(client => 
-                    client.visite && client.visite.toLowerCase() === 'bibliothèque'
+                const bibliothequeClients = (updatedClients || []).filter(client =>
+                    client.visite && client.visite.toLowerCase().includes('bibliothèque')
                 )
                 setAllClients(bibliothequeClients);
+
+                // Fermer le modal
                 setOpenClientDialog(false);
+
+                // Réinitialiser le formulaire
                 resetClientForm();
-                toast.success('Client enregistré avec succès!');
             }
-            
+
         } catch (error) {
-            console.error('Erreur:', error);
-            toast.error(error.message || 'Erreur lors de l\'enregistrement du client');
+            console.error('Erreur détaillée:', error);
+            toast.error(error.message || 'Erreur lors de l\'enregistrement du visiteur');
         } finally {
             setIsClientLoading(false);
         }
     };
-
-    // Formater la date
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A'
-        if (typeof dateString === 'string' && dateString.includes('/')) {
-            // Date déjà au format jj/mm/aaaa
-            return dateString;
-        }
-        const date = new Date(dateString)
-        if (isNaN(date.getTime())) return 'Date invalide'
-        const day = String(date.getDate()).padStart(2, '0')
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const year = date.getFullYear()
-        return `${day}/${month}/${year}`
-    }
 
     // Formater pour n'afficher que l'année
     const formatYear = (dateString) => {
@@ -555,20 +477,20 @@ const Bibliotheque = () => {
     // Filtrer les livres
     const filteredBooks = allBooks.filter(book => {
         const searchTermLower = searchTerm.toLowerCase();
-        
-        const matchesSearch = 
+
+        const matchesSearch =
             !searchTerm ||
             book.titre?.toLowerCase().includes(searchTermLower) ||
             book.auteur?.toLowerCase().includes(searchTermLower) ||
             String(book.code || '').toLowerCase().includes(searchTermLower) ||
             book.categorie?.toLowerCase().includes(searchTermLower);
 
-        const matchesStatus = 
-            selectedStatus === "Tous" || 
+        const matchesStatus =
+            selectedStatus === "Tous" ||
             book.status === selectedStatus;
 
-        const matchesFiltre = 
-            filtre === "Tous" || 
+        const matchesFiltre =
+            filtre === "Tous" ||
             book.categorie === filtre;
 
         return matchesSearch && matchesStatus && matchesFiltre;
@@ -577,7 +499,7 @@ const Bibliotheque = () => {
     // Filtrer les clients (recherche uniquement)
     const filteredClients = allClients.filter(client => {
         const searchTermLower = clientSearchTerm.toLowerCase();
-        
+
         return !clientSearchTerm ||
             client.nom?.toLowerCase().includes(searchTermLower) ||
             client.prenom?.toLowerCase().includes(searchTermLower) ||
@@ -605,7 +527,7 @@ const Bibliotheque = () => {
         }
 
         if (typeof aValue === 'string' && typeof bValue === 'string') {
-            return sortConfig.direction === 'asc' 
+            return sortConfig.direction === 'asc'
                 ? aValue.localeCompare(bValue)
                 : bValue.localeCompare(aValue)
         }
@@ -626,7 +548,7 @@ const Bibliotheque = () => {
         const bValue = b[clientSortConfig.key]
 
         if (typeof aValue === 'string' && typeof bValue === 'string') {
-            return clientSortConfig.direction === 'asc' 
+            return clientSortConfig.direction === 'asc'
                 ? aValue.localeCompare(bValue)
                 : bValue.localeCompare(aValue)
         }
@@ -670,19 +592,19 @@ const Bibliotheque = () => {
 
     const getSortIcon = (key) => {
         if (sortConfig.key !== key) return <MdOutlineSort className="text-gray-400 text-sm" />
-        return sortConfig.direction === 'asc' 
+        return sortConfig.direction === 'asc'
             ? <FaSortUp className="text-amber-500" />
             : <FaSortDown className="text-amber-500" />
     }
 
     const getClientSortIcon = (key) => {
         if (clientSortConfig.key !== key) return <MdOutlineSort className="text-gray-400 text-sm" />
-        return clientSortConfig.direction === 'asc' 
+        return clientSortConfig.direction === 'asc'
             ? <FaSortUp className="text-blue-500" />
             : <FaSortDown className="text-blue-500" />
     }
 
-    // Statistiques - Compte uniquement les clients de la bibliothèque
+    // Statistiques
     const stats = {
         total: allBooks.length,
         available: allBooks.filter(b => b.status === 'Disponible' || b.status === 'disponible').length,
@@ -709,10 +631,10 @@ const Bibliotheque = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             <NavBarDash />
-            
+
             <div className="pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 mt-10">
-               {/* Formulaire de modification de livre */}
-            {modal && (
+                {/* Formulaire de modification de livre */}
+                {modal && (
                     <div className='pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 fixed inset-0 h-screen backdrop-blur-xl flex items-center justify-center z-50'>
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
                             <div className="bg-white rounded-xl w-full max-w-full sm:max-w-4xl max-h-[90vh] sm:max-h-[95vh] overflow-y-auto">
@@ -784,13 +706,13 @@ const Bibliotheque = () => {
                                                 required
                                             />
                                         </div>
-                                        
+
                                         {/* Section Image */}
                                         <div className="md:col-span-2">
                                             <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                                                 Image <span className="text-red-500">*</span>
                                             </label>
-                                            
+
                                             <div className="flex flex-col gap-3 sm:gap-4">
                                                 {/* Option 1 : Upload de fichier */}
                                                 <div>
@@ -840,9 +762,9 @@ const Bibliotheque = () => {
                                                     <div className="mt-3 sm:mt-4">
                                                         <p className="text-sm font-medium text-gray-700 mb-1 sm:mb-2">Aperçu :</p>
                                                         <div className="relative inline-block">
-                                                            <img 
-                                                                src={imagePreview || imageUrl} 
-                                                                alt="Aperçu" 
+                                                            <img
+                                                                src={imagePreview || imageUrl}
+                                                                alt="Aperçu"
                                                                 className="h-32 sm:h-40 w-auto rounded-lg object-cover border border-gray-300"
                                                                 onError={(e) => {
                                                                     e.target.style.display = 'none';
@@ -874,7 +796,7 @@ const Bibliotheque = () => {
                                             <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                                                 Catégorie <span className="text-red-500">*</span>
                                             </label>
-                                            <select 
+                                            <select
                                                 name="categorie"
                                                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base appearance-none"
                                                 value={book.categorie}
@@ -962,7 +884,7 @@ const Bibliotheque = () => {
                                             <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                                                 Statut <span className="text-red-500">*</span>
                                             </label>
-                                            <select 
+                                            <select
                                                 name="status"
                                                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base appearance-none"
                                                 value={book.status}
@@ -1012,66 +934,38 @@ const Bibliotheque = () => {
                         </div>
                     </div>
                 )}
-               {/* Fin Formulaire de modification  */}
-               
-               {/* Supprimer un livre */}
-               {deleted && (
+
+                {/* Fin Formulaire de modification  */}
+
+                {/* Supprimer un livre */}
+                {deleted && (
                     <div className='pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 fixed inset-0 h-screen backdrop-blur-xl flex items-center justify-center z-50'>
-                    <div className='w-full max-w-md px-4 py-8 bg-white rounded-xl z-50 border-t-4 border-t-red-500 shadow-xl'>
-                        <div className='flex justify-center w-full mb-6'>
-                            <FaTrash className='text-4xl text-red-500' />
-                        </div>
-                        <h2 className='text-2xl font-bold text-center text-gray-800 mb-2'>Confirmer la suppression</h2>
-                        <p className='text-gray-600 text-center mb-6'>
-                            Êtes-vous sûr de vouloir supprimer ce livre ? Cette action est irréversible.
-                        </p>
-                        <div className='w-full flex items-center justify-center gap-4 px-2'>
-                            <button 
-                                onClick={CloseDelete} 
-                                className='px-6 py-3 bg-gray-200 text-gray-800 duration-100 hover:bg-gray-300 rounded-lg cursor-pointer font-medium'
-                            >
-                                Annuler
-                            </button>
-                            <button 
-                                onClick={handleDelete}  
-                                className='px-6 py-3 bg-red-500 text-white duration-100 hover:bg-red-600 rounded-lg cursor-pointer font-medium'
-                            >
-                                Supprimer
-                            </button>
+                        <div className='w-full max-w-md px-4 py-8 bg-white rounded-xl z-50 border-t-4 border-t-red-500 shadow-xl'>
+                            <div className='flex justify-center w-full mb-6'>
+                                <FaTrash className='text-4xl text-red-500' />
+                            </div>
+                            <h2 className='text-2xl font-bold text-center text-gray-800 mb-2'>Confirmer la suppression</h2>
+                            <p className='text-gray-600 text-center mb-6'>
+                                Êtes-vous sûr de vouloir supprimer ce livre ? Cette action est irréversible.
+                            </p>
+                            <div className='w-full flex items-center justify-center gap-4 px-2'>
+                                <button
+                                    onClick={CloseDelete}
+                                    className='px-6 py-3 bg-gray-200 text-gray-800 duration-100 hover:bg-gray-300 rounded-lg cursor-pointer font-medium'
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    onClick={handleDelete}
+                                    className='px-6 py-3 bg-red-500 text-white duration-100 hover:bg-red-600 rounded-lg cursor-pointer font-medium'
+                                >
+                                    Supprimer
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
                 )}
-                
-                {/* Supprimer un client */}
-               {clientDeleted && (
-                    <div className='pt-20 px-2 sm:px-4 lg:px-6 xl:px-8 fixed inset-0 h-screen backdrop-blur-xl flex items-center justify-center z-50'>
-                    <div className='w-full max-w-md px-4 py-8 bg-white rounded-xl z-50 border-t-4 border-t-red-500 shadow-xl'>
-                        <div className='flex justify-center w-full mb-6'>
-                            <FaTrash className='text-4xl text-red-500' />
-                        </div>
-                        <h2 className='text-2xl font-bold text-center text-gray-800 mb-2'>Confirmer la suppression</h2>
-                        <p className='text-gray-600 text-center mb-6'>
-                            Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.
-                        </p>
-                        <div className='w-full flex items-center justify-center gap-4 px-2'>
-                            <button 
-                                onClick={CloseClientDelete} 
-                                className='px-6 py-3 bg-gray-200 text-gray-800 duration-100 hover:bg-gray-300 rounded-lg cursor-pointer font-medium'
-                            >
-                                Annuler
-                            </button>
-                            <button 
-                                onClick={handleClientDelete}  
-                                className='px-6 py-3 bg-red-500 text-white duration-100 hover:bg-red-600 rounded-lg cursor-pointer font-medium'
-                            >
-                                Supprimer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                )}
-               
+
                 <div className="max-w-7xl mx-auto">
                     {/* En-tête */}
                     <div className="mb-6 sm:mb-8 px-2">
@@ -1106,7 +1000,7 @@ const Bibliotheque = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Carte Disponible */}
                         <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                             <div className="flex justify-between items-start">
@@ -1123,7 +1017,7 @@ const Bibliotheque = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Carte Empruntés */}
                         <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                             <div className="flex justify-between items-start">
@@ -1140,7 +1034,7 @@ const Bibliotheque = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Carte Catégories */}
                         <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                             <div className="flex justify-between items-start">
@@ -1157,7 +1051,7 @@ const Bibliotheque = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Carte Visiteurs Bibliothèque */}
                         <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                             <div className="flex justify-between items-start">
@@ -1238,7 +1132,7 @@ const Bibliotheque = () => {
                                     Aucun visiteur de bibliothèque trouvé
                                 </h3>
                                 <p className="text-gray-500 max-w-md mx-auto text-sm sm:text-base">
-                                    {clientSearchTerm 
+                                    {clientSearchTerm
                                         ? 'Aucun résultat pour les critères sélectionnés.'
                                         : 'Aucun visiteur de bibliothèque enregistré.'}
                                 </p>
@@ -1260,24 +1154,24 @@ const Bibliotheque = () => {
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">
-                                                    <button 
-                                                        onClick={() => handleClientSort('numero')} 
+                                                    <button
+                                                        onClick={() => handleClientSort('numero')}
                                                         className="flex items-center gap-1 hover:text-gray-900"
                                                     >
                                                         N° {getClientSortIcon('numero')}
                                                     </button>
                                                 </th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">
-                                                    <button 
-                                                        onClick={() => handleClientSort('nom')} 
+                                                    <button
+                                                        onClick={() => handleClientSort('nom')}
                                                         className="flex items-center gap-1 hover:text-gray-900"
                                                     >
                                                         Nom & Prénom {getClientSortIcon('nom')}
                                                     </button>
                                                 </th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">
-                                                    <button 
-                                                        onClick={() => handleClientSort('contact')} 
+                                                    <button
+                                                        onClick={() => handleClientSort('contact')}
                                                         className="flex items-center gap-1 hover:text-gray-900"
                                                     >
                                                         Contact {getClientSortIcon('contact')}
@@ -1287,13 +1181,12 @@ const Bibliotheque = () => {
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Date de visite</th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Profession</th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Type de visite</th>
-                                                <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
                                             {currentClients.map((client, index) => (
-                                                <tr 
-                                                    key={client._id || index} 
+                                                <tr
+                                                    key={client._id || index}
                                                     className="hover:bg-gray-50 transition-colors duration-150"
                                                 >
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
@@ -1325,7 +1218,7 @@ const Bibliotheque = () => {
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
                                                         <div className="flex items-center gap-2 text-sm text-gray-700">
                                                             <FaRegCalendarAlt className="text-gray-400 hidden sm:block" />
-                                                            {formatDate(client.date)}
+                                                            {client.date || 'N/A'}
                                                         </div>
                                                     </td>
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
@@ -1339,17 +1232,6 @@ const Bibliotheque = () => {
                                                             <FaUserCheck className="text-xs" />
                                                             {client.visite}
                                                         </span>
-                                                    </td>
-                                                    <td className="py-3 px-3 sm:px-4 lg:px-6">
-                                                        <div className="flex items-center gap-1">
-                                                            <button 
-                                                                className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                                title="Supprimer"
-                                                                onClick={() => OpenClientDelete(client._id)}
-                                                            >
-                                                                <FaTrash className="text-sm sm:text-base" />
-                                                            </button>
-                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -1371,16 +1253,16 @@ const Bibliotheque = () => {
                                             >
                                                 <FaArrowLeft className="text-sm" />
                                             </button>
-                                            
+
                                             <div className="flex gap-1">
                                                 {[...Array(totalClientPages)].map((_, i) => {
                                                     const page = i + 1
-                                                    if (isMobile && page !== clientCurrentPage && 
-                                                        page !== 1 && page !== totalClientPages && 
+                                                    if (isMobile && page !== clientCurrentPage &&
+                                                        page !== 1 && page !== totalClientPages &&
                                                         page !== clientCurrentPage - 1 && page !== clientCurrentPage + 1) {
                                                         return null;
                                                     }
-                                                    
+
                                                     if (
                                                         page === 1 ||
                                                         page === totalClientPages ||
@@ -1390,9 +1272,9 @@ const Bibliotheque = () => {
                                                             <button
                                                                 key={i}
                                                                 onClick={() => setClientCurrentPage(page)}
-                                                                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm ${clientCurrentPage === page 
-                                                                    ? 'bg-indigo-500 text-white' 
-                                                                    : 'border border-gray-300 hover:bg-gray-50'}`}
+                                                                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm ${clientCurrentPage === page
+                                                                        ? 'bg-indigo-500 text-white'
+                                                                        : 'border border-gray-300 hover:bg-gray-50'}`}
                                                             >
                                                                 {page}
                                                             </button>
@@ -1542,24 +1424,24 @@ const Bibliotheque = () => {
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">
-                                                    <button 
-                                                        onClick={() => handleSort('code')} 
+                                                    <button
+                                                        onClick={() => handleSort('code')}
                                                         className="flex items-center gap-1 hover:text-gray-900"
                                                     >
                                                         Code {getSortIcon('code')}
                                                     </button>
                                                 </th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">
-                                                    <button 
-                                                        onClick={() => handleSort('titre')} 
+                                                    <button
+                                                        onClick={() => handleSort('titre')}
                                                         className="flex items-center gap-1 hover:text-gray-900"
                                                     >
                                                         Titre {getSortIcon('titre')}
                                                     </button>
                                                 </th>
                                                 <th className="text-left py-3 px-3 sm:px-4 lg:px-6 font-semibold text-gray-700 text-xs sm:text-sm">
-                                                    <button 
-                                                        onClick={() => handleSort('auteur')} 
+                                                    <button
+                                                        onClick={() => handleSort('auteur')}
                                                         className="flex items-center gap-1 hover:text-gray-900"
                                                     >
                                                         Auteur {getSortIcon('auteur')}
@@ -1574,8 +1456,8 @@ const Bibliotheque = () => {
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
                                             {currentBooks.map((book, index) => (
-                                                <tr 
-                                                    key={book.code || index} 
+                                                <tr
+                                                    key={book.code || index}
                                                     className="hover:bg-gray-50 transition-colors duration-150"
                                                 >
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
@@ -1602,14 +1484,14 @@ const Bibliotheque = () => {
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
                                                         <span className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
                                                             <FaTag className="text-xs hidden sm:block" />
-                                                            {isMobile && book.categorie && book.categorie.length > 12 
-                                                                ? `${book.categorie.substring(0, 10)}...` 
+                                                            {isMobile && book.categorie && book.categorie.length > 12
+                                                                ? `${book.categorie.substring(0, 10)}...`
                                                                 : book.categorie || 'Non catégorisé'}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
                                                         <span className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-100">
-                                                                {book.quantite}
+                                                            {book.quantite}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
@@ -1621,27 +1503,27 @@ const Bibliotheque = () => {
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
                                                         <span className={`inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium ${statusColors[book.status] || 'bg-gray-100 text-gray-800 border border-gray-200'}`}>
                                                             {book.status === 'Disponible' ? <FaRegCheckCircle className="text-xs" /> : <FaRegClock className="text-xs" />}
-                                                            {isMobile && book.status && book.status.length > 10 
-                                                                ? `${book.status.substring(0, 8)}...` 
+                                                            {isMobile && book.status && book.status.length > 10
+                                                                ? `${book.status.substring(0, 8)}...`
                                                                 : book.status}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-3 sm:px-4 lg:px-6">
                                                         <div className="flex items-center gap-1">
-                                                            <button 
+                                                            <button
                                                                 className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                                 title="Voir les détails"
                                                             >
                                                                 <FaEye className="text-sm sm:text-base" />
                                                             </button>
-                                                            <button 
+                                                            <button
                                                                 className="p-1.5 sm:p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                                                                 onClick={() => selectBook(book)}
                                                                 title="Modifier"
                                                             >
                                                                 <FaEdit className="text-sm sm:text-base" />
                                                             </button>
-                                                            <button 
+                                                            <button
                                                                 className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                                 title="Supprimer"
                                                                 onClick={() => OpenDelete(book._id)}
@@ -1670,16 +1552,16 @@ const Bibliotheque = () => {
                                             >
                                                 <FaArrowLeft className="text-sm" />
                                             </button>
-                                            
+
                                             <div className="flex gap-1">
                                                 {[...Array(totalBookPages)].map((_, i) => {
                                                     const page = i + 1
-                                                    if (isMobile && page !== currentPage && 
-                                                        page !== 1 && page !== totalBookPages && 
+                                                    if (isMobile && page !== currentPage &&
+                                                        page !== 1 && page !== totalBookPages &&
                                                         page !== currentPage - 1 && page !== currentPage + 1) {
                                                         return null;
                                                     }
-                                                    
+
                                                     if (
                                                         page === 1 ||
                                                         page === totalBookPages ||
@@ -1689,9 +1571,9 @@ const Bibliotheque = () => {
                                                             <button
                                                                 key={i}
                                                                 onClick={() => setCurrentPage(page)}
-                                                                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm ${currentPage === page 
-                                                                    ? 'bg-amber-500 text-white' 
-                                                                    : 'border border-gray-300 hover:bg-gray-50'}`}
+                                                                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm ${currentPage === page
+                                                                        ? 'bg-amber-500 text-white'
+                                                                        : 'border border-gray-300 hover:bg-gray-50'}`}
                                                             >
                                                                 {page}
                                                             </button>
@@ -1778,7 +1660,7 @@ const Bibliotheque = () => {
                                             </td>
                                             <td className="py-3 px-3 sm:px-4 lg:px-6">
                                                 <div className="text-xs sm:text-sm text-gray-500 text-center mt-1 max-w-xs truncate">
-                                                    <FaTrash className='text-xl text-red-500 duration-100 hover:text-red-600 cursor-pointer'/>
+                                                    <FaTrash className='text-xl text-red-500 duration-100 hover:text-red-600 cursor-pointer' />
                                                 </div>
                                             </td>
                                         </tr>
@@ -1867,13 +1749,13 @@ const Bibliotheque = () => {
                                         required
                                     />
                                 </div>
-                                
+
                                 {/* Section Image */}
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                                         Image <span className="text-red-500">*</span>
                                     </label>
-                                    
+
                                     <div className="flex flex-col gap-3 sm:gap-4">
                                         {/* Option 1 : Upload de fichier */}
                                         <div>
@@ -1923,9 +1805,9 @@ const Bibliotheque = () => {
                                             <div className="mt-3 sm:mt-4">
                                                 <p className="text-sm font-medium text-gray-700 mb-1 sm:mb-2">Aperçu :</p>
                                                 <div className="relative inline-block">
-                                                    <img 
-                                                        src={imagePreview || imageUrl} 
-                                                        alt="Aperçu" 
+                                                    <img
+                                                        src={imagePreview || imageUrl}
+                                                        alt="Aperçu"
                                                         className="h-32 sm:h-40 w-auto rounded-lg object-cover border border-gray-300"
                                                         onError={(e) => {
                                                             e.target.style.display = 'none';
@@ -1957,7 +1839,7 @@ const Bibliotheque = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                                         Catégorie <span className="text-red-500">*</span>
                                     </label>
-                                    <select 
+                                    <select
                                         name="categorie"
                                         className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base appearance-none"
                                         value={book.categorie}
@@ -2045,7 +1927,7 @@ const Bibliotheque = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                                         Statut <span className="text-red-500">*</span>
                                     </label>
-                                    <select 
+                                    <select
                                         name="status"
                                         className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none text-sm sm:text-base appearance-none"
                                         value={book.status}
@@ -2124,27 +2006,10 @@ const Bibliotheque = () => {
                                         Date de visite <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        type="text"
+                                        type="date"
                                         name="date"
                                         className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base"
-                                        placeholder="jj/mm/aaaa"
-                                        value={client.date}
-                                        onChange={handleClientInputChange}
-                                        required
-                                    />
-                                    <p className="mt-1 text-xs text-gray-500">Format: jj/mm/aaaa</p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                                        Numéro <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="numero"
-                                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base"
-                                        placeholder="Ex: 001"
-                                        value={client.numero}
+                                        value={date}
                                         onChange={handleClientInputChange}
                                         required
                                     />
@@ -2213,7 +2078,7 @@ const Bibliotheque = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                                         Type de visite <span className="text-red-500">*</span>
                                     </label>
-                                    <select 
+                                    <select
                                         name="visite"
                                         className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm sm:text-base appearance-none"
                                         value={client.visite}
