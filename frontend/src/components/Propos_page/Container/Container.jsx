@@ -6,10 +6,10 @@ import  heros from "../../../assets/img/hero.jpeg"
 import fete from "../../../assets/img/fete.jpg"
 import { FiTarget, FiTool } from "react-icons/fi";
 import mission from "../../../assets/mission.jpg"
-import library2 from "../../../assets/library2.jpg"
-import party from "../../../assets/party.jpg"
+import library2 from "../../../assets/img/bibliotheque-2.jpg"
+import party from "../../../assets/img/fete-2.jpg"
 import { IoIosArrowRoundForward } from "react-icons/io";
-import jeune from "../../../assets/jeune.jpg"
+import jeune from "../../../assets/img/gemini_enfant.png"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion";
 import { FaBuilding, FaCalendar, FaCalendarCheck, FaUser, FaWrench } from "react-icons/fa"
@@ -58,7 +58,7 @@ const Container = () => {
     {
       id: "3",
       icon: <FaUser/>,
-      title: "Rez-de-Chaussée : Espace Jeunesse",
+      title: "Rez-de-Chaussée : Espace Enfant",
       description: "Le rez-de-chaussée est dédié à la Bibliothèque des Livres Pour Tous Marguerite ABOUET qui accueille les tout-petits et les adolescents de la Maternelle à la Classe de 3ème. Il est composé de 3 grandes salles aménagées et de 3 bureaux.",
       image: jeune,
       features: [
@@ -361,7 +361,7 @@ const Container = () => {
                     viewport={{ once: true }}
                     transition={{ delay: 2 * 0.2 }}
                     className="relative lg:grid grid-cols-1 gap-32   hidden">
-                        <div className="absolute w-[3px] h-100 left-1/2 bg-gray-200 -z-10"/>
+                        <div className="absolute w-1 h-100 left-1/2 bg-gray-200 -z-10"/>
                         <span className="p-4 bg-orange-500 text-2xl text-white rounded-2xl"> <FiTool/> </span>
                         <span className="p-4 bg-orange-500 text-2xl text-white rounded-2xl"> <FaCalendarCheck/> </span>
                     </motion.div>

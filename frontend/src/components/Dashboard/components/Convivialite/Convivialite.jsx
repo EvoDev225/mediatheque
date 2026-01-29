@@ -10,6 +10,7 @@ import { HiOutlineUserGroup } from "react-icons/hi";
 import { IoStatsChartOutline } from "react-icons/io5";
 import { useNavigate } from 'react-router-dom';
 import { FaTrash } from 'react-icons/fa';
+import { DeconnexionAdmin, DeconnexionEmploye } from '../../../../Fonctions/Connexion/Authentification';
 
 const Convivialite = () => {
     const navigate = useNavigate();
@@ -43,6 +44,25 @@ const Convivialite = () => {
         contact: "",
         profession: ""
     });
+     useEffect(()=>{
+                    const fetchUserData = async ()=>{
+                        try {
+                            const res = await VerifierAuthentification()
+                            if(!res){
+                                await DeconnexionEmploye()
+                                navigate("/connexion")
+                            }
+                            if(res.service !== 'Salle Convivialité'){
+                                await DeconnexionEmploye()
+                                navigate("/connexion")
+                            }
+                            
+                        } catch (error) {
+                            console.log(error)
+                        }
+                    }
+                    fetchUserData()
+                })
 
     // Fonction pour convertir yyyy-mm-dd en jj/mm/aaaa (simple et robuste)
     const convertirEnJJMMAAAA = (dateISO) => {

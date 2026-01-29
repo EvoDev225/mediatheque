@@ -118,8 +118,6 @@ const verifierAuthentification =async (req,res)=>{
         return res.status(500).json({message:"Erreur serveur",erreur:error.message})
     }
 }
-
-
 const afficherToutUtilisateur = async (req,res)=>{
     try {
         const utilisateur = await Utilisateur.find({ type: { $ne: "administrateur" } })

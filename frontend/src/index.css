@@ -75,3 +75,17 @@ a,p,li{
     background:oklch(70.09% 0.20117 44.755) ;
   }
 }
+
+/* Dans votre fichier CSS global (tailwind.config.js ou App.css) */
+@keyframes shine {
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(30deg);
+    }
+    100% {
+        transform: translateX(100%) translateY(100%) rotate(30deg);
+    }
+}
+
+.animate-shine {
+    animation: shine 2s infinite;
+}

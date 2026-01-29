@@ -10,7 +10,7 @@ const Navbar = () => {
     { name: "Services", path: "/service" },
     { name: "A Propos", path: "/propos" },
     { name: "Livres", path: "/livre" },
-    { name: "Contact", path: "#contact" },
+    { name: "Contact", path: "#footer" },
   ];
 
   const [isOpen, setIsOpen] = useState(false);

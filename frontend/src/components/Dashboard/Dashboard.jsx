@@ -34,11 +34,13 @@ import {
   ToutUtilisateur, 
   VerifierAuthentification 
 } from "../../Fonctions/Utilisateur/Utilisateur"
+import { DeconnexionAdmin } from '../../Fonctions/Connexion/Authentification'
 
 const Dashboard = () => {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
     const [deleteUser, setDeleteUser] = useState(null)
+    const [data,setData]=useState()
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [utilisateur, setUtilisateur] = useState({
         nom: "",
@@ -65,7 +67,25 @@ const Dashboard = () => {
         }
         
     }
-    
+    useEffect(()=>{
+        const fetchUserData = async ()=>{
+            try {
+                const res = await VerifierAuthentification()
+                if(!res){
+                    await DeconnexionAdmin()
+                    navigate("/connexion")
+                }
+                if(res.service !== 'Administration'){
+                    await DeconnexionAdmin()
+                    navigate("/connexion")
+                }
+                
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        fetchUserData()
+    })
     // Changer le type du password
 
     // Suppression d'un utilisateur
@@ -174,8 +194,8 @@ const changerNiveau = async (e) => {
     const nouveauNiveau = niveau.niveau.toString();
     
     // Vérifier que le niveau est valide
-    if (!["1", "2", "3"].includes(nouveauNiveau)) {
-        toast.error("Niveau invalide. Doit être 1, 2 ou 3.");
+    if (!["1", "2", "3","4"].includes(nouveauNiveau)) {
+        toast.error("Niveau invalide. Doit être 1, 2 ou 3 ou 4.");
         return;
     }
     
@@ -184,7 +204,8 @@ const changerNiveau = async (e) => {
         const niveauServiceMap = {
             "1": "Salle Multimedia",
             "2": "Bibliothèque Adulte", 
-            "3": "Salle Convivialite"
+            "3": "Salle Convivialite",
+            "4": "Bibliothèque Enfant"
         };
         
         const nouveauService = niveauServiceMap[nouveauNiveau];
@@ -259,6 +280,9 @@ const changerNiveau = async (e) => {
           break;
         case "3":
           utilisateurFinal.service = "Salle Convivialité";
+          break
+        case "4":
+            utilisateurFinal.service = "Bibliothèque Enfant";
           break;
       }
     }
@@ -795,21 +819,23 @@ const changerNiveau = async (e) => {
             if (selectedNiveau === "1") service = "Salle Multimédia";
             else if (selectedNiveau === "2") service = "Bibliothèque Adulte";
             else if (selectedNiveau === "3") service = "Salle Convivialité";
+            else if (selectedNiveau === "4") service = "Bibliothèque Enfant";
             
             return {
-              ...prev,
-              niveau: selectedNiveau,
-              service: service
+            ...prev,
+            niveau: selectedNiveau,
+            service: service
             };
-          });
+        });
         }}
         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
         required
-      >
+        >
         <option value="">Sélectionnez un niveau</option>
         <option value="1">Niveau 1 - Salle Multimédia</option>
         <option value="2">Niveau 2 - Bibliothèque Adulte</option>
         <option value="3">Niveau 3 - Salle Convivialité</option>
+        <option value="4">Niveau 4 - Bibliothèque Enfant</option>
       </select>
     </div>
     
@@ -953,7 +979,7 @@ const changerNiveau = async (e) => {
                                 </div>
 
                                 <div className="flex justify-center space-x-4">
-                                    {[1, 2, 3].map((num) => (
+                                    {[1, 2, 3,4].map((num) => (
                                         <button
                                             key={num}
                                             type="button"

@@ -39,6 +39,9 @@ import SideBar from './SideBar'
 import { useEffect, useState } from 'react'
 import { ToutLivre } from '../../Fonctions/Livre/Flivre'
 import toast from 'react-hot-toast'
+import { VerifierAuthentification } from '../../Fonctions/Utilisateur/Utilisateur'
+import { DeconnexionAdmin } from '../../Fonctions/Connexion/Authentification'
+import { useNavigate } from 'react-router-dom'
 
 const Books = () => {
     const [allBooks, setAllBooks] = useState([])
@@ -49,7 +52,8 @@ const Books = () => {
     const [selectedStatus, setSelectedStatus] = useState("Tous")
     const [selectedCategory, setSelectedCategory] = useState("Tous")
     const [loading, setLoading] = useState(true)
-    
+    const [data,setData]=useState()
+    const navigate = useNavigate()
     // Charger les livres
     useEffect(() => {
         const fetchBooks = async () => {
@@ -73,6 +77,25 @@ const Books = () => {
         }
         fetchBooks()
     }, [])
+    useEffect(()=>{
+            const fetchUserData = async ()=>{
+                try {
+                    const res = await VerifierAuthentification()
+                    if(!res){
+                        await DeconnexionAdmin()
+                        navigate("/connexion")
+                    }
+                    if(res.service !== 'Administration'){
+                        await DeconnexionAdmin()
+                        navigate("/connexion")
+                    }
+                    
+                } catch (error) {
+                    console.log(error)
+                }
+            }
+            fetchUserData()
+        })
 
     // Formater la date
     const formatDate = (dateString) => {

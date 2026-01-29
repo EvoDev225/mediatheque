@@ -1,26 +1,79 @@
 /* VERSION AMÉLIORÉE – Sidebar intacte */
 
 import { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom';
 import NavBarDash from './NavBarDash'
 import SideBar from './SideBar'
 import { FaRegEdit } from "react-icons/fa";
 import { FaRegTrashCan } from "react-icons/fa6";
-import { FaChartLine, FaUsers, FaCalendarAlt, FaBuilding, FaFilter, FaChartBar } from "react-icons/fa";
-import { MdOutlineTrendingUp, MdDateRange } from "react-icons/md";
+import { FaChartLine, FaUsers, FaCalendarAlt, FaBuilding, FaFilter, FaChartBar, FaChild, FaBirthdayCake, FaUserFriends } from "react-icons/fa";
+import { MdOutlineTrendingUp, MdDateRange, MdOutlineFamilyRestroom } from "react-icons/md";
 import { IoStatsChart } from "react-icons/io5";
 import { RiUserLine } from "react-icons/ri";
+import { GiBabyFace } from "react-icons/gi";
+import { TbGenderMale, TbGenderFemale } from "react-icons/tb";
 import toast from 'react-hot-toast'
 import { AfficherVisites } from '../../Fonctions/Espace/Visite'
 import { AfficherClient } from '../../Fonctions/Utilisateur/Utilisateur';
+import { VerifierAuthentification } from '../../Fonctions/Utilisateur/Utilisateur';
+import { DeconnexionAdmin } from '../../Fonctions/Connexion/Authentification';
+import { getAllChildrens } from '../../Fonctions/Children/Children';
 
 const Place = () => {
+    const navigate = useNavigate();
     const [liste, setListe] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingEnfants, setLoadingEnfants] = useState(true);
     const [filterDate, setFilterDate] = useState('');
     const [client, setClient] = useState([]);
+    const [enfants, setEnfants] = useState([]);
+
+    // VÉRIFICATION D'AUTHENTIFICATION
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const user = await VerifierAuthentification();
+                if (!user) {
+                    window.history.replaceState({}, '', '/connexion');
+                    navigate('/connexion', { replace: true });
+                }
+            } catch (error) {
+                console.log("Erreur d'authentification:", error);
+                navigate('/connexion', { replace: true });
+            }
+        };
+        checkAuth();
+    }, [navigate]);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const res = await VerifierAuthentification()
+                if (!res) {
+                    await DeconnexionAdmin()
+                    navigate("/connexion")
+                }
+                if (res.service !== 'Administration') {
+                    await DeconnexionAdmin()
+                    navigate("/connexion")
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        fetchUserData()
+    }, [])
 
     const stats = useMemo(() => {
-        if (!liste.length) return { parEspace: {}, total: 0 };
+        if (!liste.length) return {
+            parEspace: {},
+            total: 0,
+            topEspace: 'Aucun',
+            topEspaceCount: 0,
+            topEspacePercentage: 0,
+            visitesAujourdhui: 0,
+            moyenneParJour: '0.0'
+        };
 
         const parEspace = {};
         liste.forEach(v => {
@@ -31,16 +84,30 @@ const Place = () => {
         const topEspace = Object.entries(parEspace)
             .sort(([, a], [, b]) => b - a)[0] || ['Aucun', 0];
 
-        const today = new Date().toISOString().split('T')[0];
+        // CORRECTION ICI : Gestion robuste des dates
+        const today = new Date();
+        const todayString = today.toLocaleDateString('fr-CA'); // Format YYYY-MM-DD
+
         const visitesAujourdhui = liste.filter(v => {
-            const d = new Date(v.date).toISOString().split('T')[0];
-            return d === today;
+            if (!v.date) return false;
+
+            try {
+                const dateVisite = new Date(v.date);
+                // Vérifier si la date est valide
+                if (isNaN(dateVisite.getTime())) return false;
+
+                const dateVisiteString = dateVisite.toLocaleDateString('fr-CA');
+                return dateVisiteString === todayString;
+            } catch (error) {
+                console.warn('Date invalide ignorée:', v.date);
+                return false;
+            }
         }).length;
 
         const moyenneParJour = (liste.length / 30).toFixed(1);
 
         // Calcul du pourcentage pour le top espace
-        const topEspacePercentage = liste.length > 0 ? 
+        const topEspacePercentage = liste.length > 0 ?
             ((topEspace[1] / liste.length) * 100).toFixed(1) : 0;
 
         return {
@@ -53,6 +120,27 @@ const Place = () => {
             moyenneParJour
         };
     }, [liste]);
+
+    // Statistiques pour les enfants
+    const enfantsStats = useMemo(() => {
+        return {
+            total: enfants.length,
+            garcons: enfants.filter(e => e.sexe === 'Masculin').length,
+            filles: enfants.filter(e => e.sexe === 'Féminin').length,
+            avecParent: enfants.filter(e => e.parent && (e.parent.nom || e.parent.prenom)).length,
+            // Calcul de l'âge moyen
+            ageMoyen: enfants.length > 0 ?
+                (enfants.reduce((sum, e) => {
+                    if (e.dateNaissance) {
+                        const birthDate = new Date(e.dateNaissance);
+                        const ageDiff = Date.now() - birthDate.getTime();
+                        const ageDate = new Date(ageDiff);
+                        return sum + Math.abs(ageDate.getUTCFullYear() - 1970);
+                    }
+                    return sum;
+                }, 0) / enfants.length).toFixed(1) : 0
+        };
+    }, [enfants]);
 
     useEffect(() => {
         const fetchVisite = async () => {
@@ -67,21 +155,81 @@ const Place = () => {
             }
         };
 
+        const fetchEnfants = async () => {
+            try {
+                setLoadingEnfants(true);
+                const donnee = await getAllChildrens();
+                setEnfants(donnee || []);
+            } catch (error) {
+                toast.error("Erreur de chargement des enfants");
+                console.error(error);
+            } finally {
+                setLoadingEnfants(false);
+            }
+        };
+
         fetchVisite();
         fetchClient();
+        fetchEnfants();
     }, []);
 
     const filteredListe = useMemo(() => {
         if (!filterDate) return liste;
         return liste.filter(v => {
-            const d = new Date(v.date).toISOString().split('T')[0];
-            return d === filterDate;
+            if (!v.date) return false;
+            try {
+                const dateVisite = new Date(v.date);
+                if (isNaN(dateVisite.getTime())) return false;
+                const dateVisiteString = dateVisite.toLocaleDateString('fr-CA');
+                return dateVisiteString === filterDate;
+            } catch {
+                return false;
+            }
         });
     }, [liste, filterDate]);
 
     const formatDate = (d) => {
         if (!d) return "";
-        return new Date(d).toLocaleDateString("fr-FR");
+        try {
+            const date = new Date(d);
+            if (isNaN(date.getTime())) return "Date invalide";
+            return date.toLocaleDateString("fr-FR");
+        } catch {
+            return "Date invalide";
+        }
+    };
+
+    const formatTime = (timeString) => {
+        if (!timeString) return "";
+        // Si l'heure est déjà formatée, la retourner telle quelle
+        if (timeString.includes(':')) return timeString;
+        // Sinon essayer de parser
+        try {
+            const [hours, minutes] = timeString.split(':');
+            return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+        } catch {
+            return timeString;
+        }
+    };
+
+    const calculateAge = (dateNaissance) => {
+        if (!dateNaissance) return "Inconnu";
+        try {
+            const birthDate = new Date(dateNaissance);
+            if (isNaN(birthDate.getTime())) return "Date invalide";
+            
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            return `${age} ans`;
+        } catch {
+            return "Inconnu";
+        }
     };
 
     const fetchClient = async () => {
@@ -225,7 +373,7 @@ const Place = () => {
                                                 <span className="text-gray-500 text-sm font-normal ml-1">visites</span>
                                             </p>
                                             <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                                                <div 
+                                                <div
                                                     className="bg-linear-to-r from-green-500 to-emerald-600 h-2 rounded-full"
                                                     style={{ width: `${Math.min(stats.topEspacePercentage, 100)}%` }}
                                                 ></div>
@@ -283,8 +431,96 @@ const Place = () => {
                         </div>
                     </div>
 
-                    {/* TABLEAU VISITES & CLIENTS avec design amélioré */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* NOUVELLES CARTES POUR LES ENFANTS */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        
+                        {/* Carte total enfants */}
+                        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-gray-500 text-sm font-medium mb-1">Total enfants</p>
+                                    <p className="text-4xl font-bold text-gray-900 mt-2">
+                                        {loadingEnfants ? (
+                                            <span className="inline-block w-20 h-10 bg-gray-200 animate-pulse rounded"></span>
+                                        ) : enfantsStats.total}
+                                    </p>
+                                    <p className="text-pink-600 text-sm font-medium mt-2 flex items-center">
+                                        <MdOutlineFamilyRestroom className="mr-1" />
+                                        Enregistrés
+                                    </p>
+                                </div>
+                                <div className="bg-linear-to-br from-pink-500 to-rose-600 p-4 rounded-2xl shadow-md">
+                                    <FaChild className="text-white text-2xl" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Carte garçons */}
+                        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-gray-500 text-sm font-medium mb-1">Garçons</p>
+                                    <p className="text-4xl font-bold text-blue-900 mt-2">
+                                        {loadingEnfants ? (
+                                            <span className="inline-block w-16 h-10 bg-gray-200 animate-pulse rounded"></span>
+                                        ) : enfantsStats.garcons}
+                                    </p>
+                                    <p className="text-blue-600 text-sm font-medium mt-2 flex items-center">
+                                        <TbGenderMale className="mr-1" />
+                                        {enfantsStats.total > 0 ? `${((enfantsStats.garcons / enfantsStats.total) * 100).toFixed(1)}%` : '0%'}
+                                    </p>
+                                </div>
+                                <div className="bg-linear-to-br from-blue-400 to-blue-500 p-4 rounded-2xl shadow-md">
+                                    <TbGenderMale className="text-white text-2xl" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Carte filles */}
+                        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-gray-500 text-sm font-medium mb-1">Filles</p>
+                                    <p className="text-4xl font-bold text-pink-900 mt-2">
+                                        {loadingEnfants ? (
+                                            <span className="inline-block w-16 h-10 bg-gray-200 animate-pulse rounded"></span>
+                                        ) : enfantsStats.filles}
+                                    </p>
+                                    <p className="text-pink-600 text-sm font-medium mt-2 flex items-center">
+                                        <TbGenderFemale className="mr-1" />
+                                        {enfantsStats.total > 0 ? `${((enfantsStats.filles / enfantsStats.total) * 100).toFixed(1)}%` : '0%'}
+                                    </p>
+                                </div>
+                                <div className="bg-linear-to-br from-pink-400 to-pink-500 p-4 rounded-2xl shadow-md">
+                                    <TbGenderFemale className="text-white text-2xl" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Carte âge moyen */}
+                        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-gray-500 text-sm font-medium mb-1">Âge moyen</p>
+                                    <p className="text-4xl font-bold text-purple-900 mt-2">
+                                        {loadingEnfants ? (
+                                            <span className="inline-block w-16 h-10 bg-gray-200 animate-pulse rounded"></span>
+                                        ) : enfantsStats.ageMoyen}
+                                    </p>
+                                    <p className="text-purple-600 text-sm font-medium mt-2 flex items-center">
+                                        <FaBirthdayCake className="mr-1" />
+                                        ans
+                                    </p>
+                                </div>
+                                <div className="bg-linear-to-br from-purple-400 to-purple-500 p-4 rounded-2xl shadow-md">
+                                    <FaBirthdayCake className="text-white text-2xl" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* TABLEAUX : VISITES, CLIENTS ET ENFANTS */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         
                         {/* Carte des visites */}
                         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -329,7 +565,7 @@ const Place = () => {
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
                                         {filteredListe.length > 0 ? (
-                                            filteredListe.slice(0, 8).map((v, i) => (
+                                            filteredListe.slice(0, 5).map((v, i) => (
                                                 <tr key={i} className="hover:bg-blue-50/50 transition-colors duration-150">
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">
@@ -343,7 +579,7 @@ const Place = () => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
-                                                            {v.heure}
+                                                            {formatTime(v.heure)}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -373,7 +609,7 @@ const Place = () => {
                                 </table>
                             </div>
                             
-                            {filteredListe.length > 8 && (
+                            {filteredListe.length > 5 && (
                                 <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
                                     <div className="text-center">
                                         <button className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors duration-200">
@@ -394,7 +630,7 @@ const Place = () => {
                                         </div>
                                         <div>
                                             <h2 className="text-xl font-bold text-gray-900">
-                                                Liste des clients
+                                                Clients récents
                                             </h2>
                                             <p className="text-gray-600 text-sm">
                                                 {clientStats.total} client(s) enregistré(s)
@@ -423,14 +659,11 @@ const Place = () => {
                                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                                 Contact
                                             </th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                                Visite
-                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
                                         {client.length > 0 ? (
-                                            client.slice(0, 8).map((c, i) => (
+                                            client.slice(0, 5).map((c, i) => (
                                                 <tr key={i} className="hover:bg-green-50/50 transition-colors duration-150">
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">
@@ -452,11 +685,6 @@ const Place = () => {
                                                             {c.contact || 'Non renseigné'}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className={`text-sm font-medium ${c.contact ? 'text-yellow-600' : 'text-gray-400'}`}>
-                                                            {c.visite || 'Non renseigné'}
-                                                        </div>
-                                                    </td>
                                                 </tr>
                                             ))
                                         ) : (
@@ -474,11 +702,128 @@ const Place = () => {
                                 </table>
                             </div>
                             
-                            {client.length > 8 && (
+                            {client.length > 5 && (
                                 <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
                                     <div className="text-center">
                                         <button className="text-green-600 hover:text-green-800 font-medium text-sm transition-colors duration-200">
                                             Voir tous les clients ({client.length})
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* NOUVEAU : Carte des enfants */}
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                            <div className="px-6 py-5 border-b border-gray-100 bg-linear-to-r from-pink-50 to-rose-50">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <div className="bg-pink-100 p-3 rounded-xl mr-4">
+                                            <GiBabyFace className="text-pink-600 text-xl" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-gray-900">
+                                                Enfants récents
+                                            </h2>
+                                            <p className="text-gray-600 text-sm">
+                                                {enfantsStats.total} enfant(s) enregistré(s)
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="bg-pink-100 text-pink-700 text-sm font-medium px-3 py-1 rounded-full">
+                                        {enfantsStats.total} total
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                #
+                                            </th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Nom
+                                            </th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Âge
+                                            </th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Sexe
+                                            </th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Numéro Parent
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {enfants.length > 0 ? (
+                                            enfants.slice(0, 5).map((e, i) => (
+                                                <tr key={i} className="hover:bg-pink-50/50 transition-colors duration-150">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {i + 1}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {e.nom}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900 font-medium">
+                                                            {calculateAge(e.date)}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center">
+                                                            {e.sexe === 'garçon' ? (
+                                                                <div className="flex items-center text-blue-600">
+                                                                    <TbGenderMale className="mr-1" />
+                                                                    <span className="text-sm font-medium">Garçon</span>
+                                                                </div>
+                                                            ) : e.sexe === 'fille' ? (
+                                                                <div className="flex items-center text-pink-600">
+                                                                    <TbGenderFemale className="mr-1" />
+                                                                    <span className="text-sm font-medium">Fille</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-sm text-gray-400">Non spécifié</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">
+                                                            {e.numeroParent ? 
+                                                                `${e.numeroParent || ''}  `.trim() || 
+                                                                'Parent enregistré' 
+                                                                : 'Non renseigné'
+                                                            }
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="5" className="px-6 py-12 text-center">
+                                                    <div className="text-gray-400">
+                                                        <GiBabyFace className="text-4xl mx-auto mb-4 opacity-50" />
+                                                        <p className="text-lg font-medium">Aucun enfant</p>
+                                                        <p className="text-sm mt-1">Aucun enfant enregistré</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {enfants.length > 5 && (
+                                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                                    <div className="text-center">
+                                        <button className="text-pink-600 hover:text-pink-800 font-medium text-sm transition-colors duration-200">
+                                            Voir tous les enfants ({enfants.length})
                                         </button>
                                     </div>
                                 </div>

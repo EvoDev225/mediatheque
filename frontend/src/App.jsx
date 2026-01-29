@@ -6,6 +6,7 @@ import Service from "./components/Service_page/Service"
 import Login from "./components/Connexion/Login"
 import Dashboard from "./components/Dashboard/Dashboard"
 import axios from 'axios'
+import IntroScreenOrangeGreen from "./IntroScreenOrangeGreen"
 import NouveauMotdepasse from "./NouveauMotdepasse"
 import NouveauMdp from "./Fonctions/Verification/NouveauMdp"
 import { Toaster } from "react-hot-toast"
@@ -24,6 +25,7 @@ axios.defaults.withCredentials = true
   return (
     <>
     <Toaster/>
+    <IntroScreenOrangeGreen/>
       <BrowserRouter>
         <Routes>
             <Route path="/" element={<Home/>} ></Route>

@@ -28,16 +28,6 @@ import { LuPartyPopper } from "react-icons/lu";
 const Container = () => {
     const Items=[
         {
-            logo: <BiBookOpen/> ,
-            title:"Bibliothèque pour adultes",
-            subtitle:"Un havre de paix pour les amateurs de lecture",
-            content:"La bibliothèque pour adultes est un lieu calme et accueillant dédié  la lecture, à la culture et à l'échange. Elle propose un large  de livres, magazines et bandes dessinées, ainsi que des  confortables pour la lecture, l'étude ou la recherche. Des  comme des clubs de lecture, des expositions et des  littéraires y sont régulièrement organisées pour favoriser le  entre passionnés.",
-            liste:["Plus de 2000 ouvrages","Espaces de lecture confortables"],
-            hour:<FaClock/>,
-            dataHour:"Lundi - Samedi : 09h - 17h",
-            image:[bb,bb_2,bb_3,bb_4]
-        },
-        {
             logo: <IoPeopleOutline /> ,
             title:"Bibliothèque pour enfants",
             subtitle:"Un univers magique pour les jeunes lecteurs",
@@ -47,6 +37,17 @@ const Container = () => {
             dataHour:"Lundi - Samedi : 09h - 17h",
             image:[enf,enf2,enf3,enf4]
         },
+        {
+            logo: <BiBookOpen/> ,
+            title:"Bibliothèque pour adultes",
+            subtitle:"Un havre de paix pour les amateurs de lecture",
+            content:"La bibliothèque pour adultes est un lieu calme et accueillant dédié  la lecture, à la culture et à l'échange. Elle propose un large  de livres, magazines et bandes dessinées, ainsi que des  confortables pour la lecture, l'étude ou la recherche. Des  comme des clubs de lecture, des expositions et des  littéraires y sont régulièrement organisées pour favoriser le  entre passionnés.",
+            liste:["Plus de 2000 ouvrages","Espaces de lecture confortables"],
+            hour:<FaClock/>,
+            dataHour:"Lundi - Samedi : 09h - 17h",
+            image:[bb,bb_2,bb_3,bb_4]
+        },
+        
         {
             logo: <FaDesktop /> ,
             title:"Salle multimédia",

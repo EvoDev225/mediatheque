@@ -44,6 +44,7 @@ const Login = () => {
                 toast.success("Connexion réussie !");
                 if (res.data.donnee.type === "administrateur") {
                     navigate("/dashboard");
+                    
                 }
                 if (res.data.donnee.type === "employé") {
                     navigate('/interface');

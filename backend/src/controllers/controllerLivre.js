@@ -4,8 +4,8 @@ const creerLivre = async (req, res) => {
     try {
         const { 
             code, 
-            img,
-            numero, 
+            numero,
+            img, 
             titre, 
             auteur, 
             lieuEdition, 

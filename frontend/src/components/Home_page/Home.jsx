@@ -6,9 +6,12 @@ import Contact from "../../Contact"
 import Footer from "../../Footer"
 import Navbar from "../../Hero/Navbar"
 import CookieConsent from "../../CookieConsent"
+import IntroScreenOrangeGreen from "../../IntroScreenOrangeGreen"
 const Home = () => {
   return (
-    <div className=" bg-[#F8F9FA] overflow-x-hidden">
+    <div className=" bg-[#F8F9FA] overflow-x-hidden relative">
+          
+      
       <Navbar />
       <Hero/>
       <Service/>

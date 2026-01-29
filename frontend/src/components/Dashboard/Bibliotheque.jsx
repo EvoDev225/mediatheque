@@ -67,7 +67,9 @@ import { useEffect, useState } from 'react'
 import { AfficherDemande, InsererLivre, ModifierLivre, SupprimerLivre, ToutLivre } from '../../Fonctions/Livre/Flivre'
 import { InsererClient } from '../../Fonctions/Espace/Visite'
 import toast from 'react-hot-toast'
-import { AfficherClient } from '../../Fonctions/Utilisateur/Utilisateur'
+import { AfficherClient, VerifierAuthentification } from '../../Fonctions/Utilisateur/Utilisateur'
+import { DeconnexionAdmin, DeconnexionEmploye } from '../../Fonctions/Connexion/Authentification'
+import { useNavigate } from 'react-router-dom'
 
 const Bibliotheque = () => {
     const [filtre, setFiltre] = useState("Tous")
@@ -114,6 +116,26 @@ const Bibliotheque = () => {
         categorie: "",
         type:'Adulte'
     })
+    const navigate = useNavigate()
+     useEffect(()=>{
+                    const fetchUserData = async ()=>{
+                        try {
+                            const res = await VerifierAuthentification()
+                            if(!res){
+                                await DeconnexionEmploye()
+                                navigate("/connexion")
+                            }
+                            if(res.service !== 'Bibliothèque Adulte'){
+                                await DeconnexionEmploye()
+                                navigate("/connexion")
+                            }
+                            
+                        } catch (error) {
+                            console.log(error)
+                        }
+                    }
+                    fetchUserData()
+                })
 
     // État initial du client
     const [client, setClient] = useState({

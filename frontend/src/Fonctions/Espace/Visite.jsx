@@ -10,7 +10,7 @@ export const AfficherVisites = async ()=>{
             return res.data.donnee
         }
     } catch (error) {
-        toast.error(error.response.data.message)
+        console.log(error.response.data.message)
     }
 }
 
@@ -23,7 +23,7 @@ export const AfficherVisiteDate = async (date)=>{
             return res.data.donnee
         }
     } catch (error) {
-        toast.error(error.response.data.message)
+        console.log(error.response.data.message)
     }
 }
 

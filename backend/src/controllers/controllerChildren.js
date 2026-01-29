@@ -13,8 +13,8 @@ const getAllChildren = async (req,res)=>{
 }
 const newChildren = async (req,res)=>{
     try {
-        const {nom,prenom,date,numeroParent,classe}= req.body
-        if(!nom || !prenom || !date || ! numeroParent || !classe){
+        const {nom,prenom,date,sexe,numeroParent,classe}= req.body
+        if(!nom || !prenom || !date || !sexe || ! numeroParent || !classe){
             return res.status(400).json({message:"Veuillez renseigner le(s) champ(s) manquant(s) !"})
         }
         const oneChild = await Child.findOne({nom},{prenom})
@@ -25,6 +25,7 @@ const newChildren = async (req,res)=>{
             nom,
             prenom,
             date,
+            sexe,
             numeroParent,
             classe
         }) 
@@ -60,9 +61,9 @@ const editChildren = async (req,res)=>{
         if(!id){
             return res.status(400).json({message:"Identifiant introuvable"})
         }
-        const {nom,prenom,date,numeroParent,classe}= req.body
+        const {nom,prenom,date,sexe,numeroParent,classe}= req.body
         const child = await Child.findByIdAndUpdate(id,
-            {nom,prenom,date,numeroParent,classe},{new:true}
+            {nom,prenom,date,sexe,numeroParent,classe},{new:true}
         )
         res.status(200).json({
             status:"valide",

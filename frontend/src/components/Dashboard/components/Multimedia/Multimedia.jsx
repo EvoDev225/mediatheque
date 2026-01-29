@@ -8,6 +8,8 @@ import { FaRegCircleXmark, FaUsers, FaChartLine, FaFilter, FaPlus, FaBuilding, F
 import { MdOutlineDashboard, MdDateRange, MdOutlineEmail, MdPhone } from "react-icons/md";
 import { HiOutlineUserGroup } from "react-icons/hi";
 import { FaEdit } from 'react-icons/fa';
+import { DeconnexionAdmin, DeconnexionEmploye } from '../../../../Fonctions/Connexion/Authentification';
+import { useNavigate } from 'react-router-dom';
 
 
 const Multimedia = () => {
@@ -35,10 +37,30 @@ const Multimedia = () => {
         visite:"",
         profession:""
     });
+    const navigate = useNavigate()
     const handleMenu = (visiteId = null) => {
         setShowMenu(!showMenu);
         setVisiteASupprimer(visiteId);
     };
+    useEffect(()=>{
+                const fetchUserData = async ()=>{
+                    try {
+                        const res = await VerifierAuthentification()
+                        if(!res){
+                            await DeconnexionEmploye()
+                            navigate("/connexion")
+                        }
+                        if(res.service !== 'Salle Multimédia'){
+                            await DeconnexionEmploye()
+                            navigate("/connexion")
+                        }
+                        
+                    } catch (error) {
+                        console.log(error)
+                    }
+                }
+                fetchUserData()
+            })
 
     const ouvrirFormulaire = () => setShowForm(true);
 

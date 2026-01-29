@@ -76,6 +76,10 @@ const NavBarDash = () => {
         const fetchUserData = async ()=>{
             try {
                 const res = await VerifierAuthentification()
+                if(!res){
+                    navigate("/connexion")
+                }
+
                 setData(res)
             } catch (error) {
                 console.log(error)
@@ -83,6 +87,8 @@ const NavBarDash = () => {
         }
         fetchUserData()
     },[])
+                
+
     const deconnect = async () => {
         try {
             await DeconnexionAdmin()
